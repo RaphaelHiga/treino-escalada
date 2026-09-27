@@ -5,14 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Diário de Escalada</title>
 <meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Escalada">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bebas+Neue&display=swap">
+<!-- fonte carregada sem travar a abertura: com sinal fraco o app abre na fonte do sistema e troca depois -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bebas+Neue&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bebas+Neue&display=swap"></noscript>
 <style>
 :root{
   color-scheme:dark;
@@ -376,6 +380,7 @@ function normalizar(d){
   n.cortes=Object.assign(n.cortes,d.cortes||{});
   EX.forEach(e=>{const c=n.cortes[e.k];if(!Array.isArray(c)||c.length!==3||c.some(x=>num(x)===null))n.cortes[e.k]=CORTES[e.k].slice()});
   n.fases=d.fases||{}; n.carga=d.carga||{};
+  n.ultimoBackup=/^\d{4}-\d{2}-\d{2}$/.test(d.ultimoBackup)?d.ultimoBackup:null;
   return n;
 }
 function migrarV2(d,v2){
@@ -402,7 +407,7 @@ function carregar(){
   gravar(d);
   return d;
 }
-function gravar(d){try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){}}
+function gravar(d){try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
 function sessao(d,dia,criar){
   if(!d.sessoes[dia]&&criar)d.sessoes[dia]={s:{},esforco:null,dor:null};
   return d.sessoes[dia]||null;
@@ -497,25 +502,29 @@ function ave(e,o){
   return '<svg class="'+cls.join(" ")+'" viewBox="66 8 248 248" aria-hidden="true">'+
     '<circle cx="190" cy="132" r="118" fill="'+e.cor+'"/>'+
     '<ellipse cx="190" cy="218" rx="50" ry="7" fill="#000" opacity=".35"/>'+
-    '<circle class="burst" cx="190" cy="150" r="80" fill="none" stroke="#FFD23F" stroke-width="10" stroke-dasharray="6 14"/>'+
-    '<g class="ave">'+PARTES.map((p,i)=>'<g class="st'+(i===f?" on":"")+'" data-f="'+i+'">'+p+'</g>').join("")+'</g>'+
+    (o.todas?'<circle class="burst" cx="190" cy="150" r="80" fill="none" stroke="#FFD23F" stroke-width="10" stroke-dasharray="6 14"/>':'')+
+    '<g class="ave">'+PARTES.map((p,i)=>o.todas||i===f?'<g class="st'+(i===f?" on":"")+'" data-f="'+i+'">'+p+'</g>':'').join("")+'</g>'+
     (o.enf?FERRUGEM:"")+(o.cur?CURATIVO:"")+'</svg>';
 }
 const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="23" fill="#3a3935"/><rect x="11" y="12" width="24" height="22" rx="6" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.6"/><path d="M16 20 a7 7 0 0 1 14 0z" fill="#FFC83D" stroke="#2B2B2B" stroke-width="1.4"/><path d="M23 20 l3 -4" stroke="#2B2B2B" stroke-width="1.6" stroke-linecap="round"/></svg>';
 const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z" fill="#FF8C1A"/><path d="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z" fill="#FFC83D"/></svg>';
 
 /* ================= estado de tela ================= */
-const U={armado:null,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
+const U={imp:null,avisoFechado:false,armado:null,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
 
 /* ================= eventos (celebrações) ================= */
-function verificarFases(){
+const celebrados=new Set();
+// edicao=true: mudança feita tocando nas séries. Aí uma queda de fase é só correção de toque,
+// não "perdeu força", e uma subida já comemorada hoje não comemora de novo.
+function verificarFases(edicao){
   const ev=[];
   EX.forEach(e=>{
     const f=faseAtual(e),p=D.fases[e.k];
     if(f===null)return;
     if(p===undefined||p===null){D.fases[e.k]=f;return}
-    if(f>p)ev.push({tipo:"evoluiu",k:e.k,de:p,para:f});
-    else if(f<p)ev.push({tipo:"regrediu",k:e.k,de:p,para:f});
+    const chave="evo:"+hoje()+":"+e.k+":"+f;
+    if(f>p){if(!edicao||!celebrados.has(chave))ev.push({tipo:"evoluiu",k:e.k,de:p,para:f});celebrados.add(chave)}
+    else if(f<p&&!edicao)ev.push({tipo:"regrediu",k:e.k,de:p,para:f});
     D.fases[e.k]=f;
   });
   return ev;
@@ -523,6 +532,7 @@ function verificarFases(){
 function eventosSerie(slot){
   const e=exDe(slot),s=D.sessoes[U.dia],n=nota(s,slot);
   if(n===null)return [];
+  const chave=U.dia+":"+slot+":"+n;if(celebrados.has(chave))return [];celebrados.add(chave);
   const lado=ladoDe(slot)?" ("+ladoDe(slot)+")":"";
   const antes=melhorNota(slot,U.dia);
   if(antes!==null&&n>antes)return [{tipo:"recorde",k:e.k,texto:e.nome+lado+": "+fmtCarga(e,n)+" nas 3 séries. O recorde anterior era "+fmtCarga(e,antes)+"."}];
@@ -545,7 +555,7 @@ function marcar(slot,i){
   if(!temSeries(s)&&s.esforco==null&&!s.dor&&!s.escalada)delete D.sessoes[U.dia];
   U.pop=slot+":"+i;
   let ev=virouOk?eventosSerie(slot):[];
-  ev=ev.concat(verificarFases());
+  ev=ev.concat(verificarFases(true));
   if(U.dia===hoje()&&!antesTinha&&temSeries(D.sessoes[U.dia])){
     const n=sequencia();
     if(n>=2)U.chama=true;
@@ -570,7 +580,7 @@ function salvarSessao(){
   const forta=temSeries(D.sessoes[U.dia]);
   if(forta&&U.esf==null){U.erro="Escolha a intensidade do fortalecimento de 0 a 10.";return render()}
   if(U.dorSim&&!Object.keys(U.dorP).length){U.erro="Toque onde doeu ou escolha Sem dor.";return render()}
-  if(U.escSim==null){U.erro="Diga se você escalou hoje.";return render()}
+  if(U.escSim==null){U.erro="Diga se você escalou.";return render()}
   if(U.escSim&&!U.escMin){U.erro="Escolha quanto tempo você escalou.";return render()}
   if(U.escSim&&!U.escInt){U.erro="Escolha a intensidade da escalada.";return render()}
   if(!forta&&!U.escSim&&!U.dorSim){U.erro="Nada para salvar: sem séries, sem escalada e sem dor.";return render()}
@@ -603,14 +613,27 @@ function salvarPeso(){
   if(!v||v<30||v>250){toast("Informe um peso entre 30 e 250 kg");return render()}
   const d=U.dia,antes=D.pesos.find(p=>p.data===d);
   D.pesos=D.pesos.filter(p=>p.data!==d);D.pesos.push({data:d,kg:r1(v)});D.pesos.sort((a,b)=>a.data<b.data?-1:1);
-  U.fila=U.fila.concat(verificarFases());U.pop="peso";
+  U.fila=U.fila.concat(verificarFases(true));U.pop="peso";
   gravar();toast(antes?"Peso atualizado":"Peso salvo");render();
 }
 function exportar(){
-  const blob=new Blob([JSON.stringify(Object.assign({app:"diario-escalada",exportadoEm:new Date().toISOString()},D),null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=url;a.download="diario-escalada-"+hoje()+".json";document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);toast("Backup exportado");
+  const nome="diario-escalada-"+hoje()+".json";
+  const json=JSON.stringify(Object.assign({app:"diario-escalada",exportadoEm:new Date().toISOString()},D,{ultimoBackup:hoje()}),null,2);
+  const feito=()=>{D.ultimoBackup=hoje();gravar();toast("Backup exportado");render()};
+  // no celular abre o menu de compartilhar (Arquivos, Drive, WhatsApp...); no computador baixa o arquivo
+  try{
+    const arq=new File([json],nome,{type:"application/json"});
+    if(matchMedia("(pointer:coarse)").matches&&navigator.canShare&&navigator.canShare({files:[arq]})){
+      navigator.share({files:[arq],title:"Backup do Diário de Escalada"}).then(feito).catch(err=>{if(!err||err.name!=="AbortError")baixar(json,nome,feito)});
+      return;
+    }
+  }catch(e){}
+  baixar(json,nome,feito);
+}
+function baixar(json,nome,feito){
+  const url=URL.createObjectURL(new Blob([json],{type:"application/json"})),a=document.createElement("a");
+  a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);feito();
 }
 function importar(txt){
   let o;try{o=JSON.parse(txt)}catch(e){return toast("Arquivo inválido")}
@@ -618,7 +641,19 @@ function importar(txt){
   if(o&&o.v===3)d=normalizar(o);
   else if(o&&Array.isArray(o.registros)){d=novo();migrarV2(d,o)}
   else return toast("Arquivo não reconhecido");
-  D=d;D.fases={};verificarFases();gravar();toast("Backup importado");render();
+  // não substitui nada antes de confirmar
+  U.imp=d;U.folha="importar";U.abre=true;render();
+}
+function confirmarImport(){
+  const d=U.imp;if(!d)return;
+  try{localStorage.setItem(K3+"-antes-import",JSON.stringify(D))}catch(e){}
+  D=d;D.fases={};U.imp=null;U.folha=null;verificarFases();gravar();toast("Backup importado");render();
+}
+function resumoDados(d){
+  const ds=Object.keys(d.sessoes).sort();
+  if(!ds.length)return "nenhuma sessão"+(d.pesos.length?", "+d.pesos.length+(d.pesos.length>1?" pesos":" peso"):"");
+  const f=d=>dm(d)+"/"+d.slice(0,4);
+  return ds.length>1?ds.length+" sessões, de "+f(ds[0])+" a "+f(ds[ds.length-1]):"1 sessão, em "+f(ds[0]);
 }
 let tT;function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>e.classList.remove("on"),2000)}
 
@@ -631,6 +666,9 @@ function telaTreino(){
     '<button data-a="dia" data-v="1" aria-label="Próximo dia"'+(ehHoje?" disabled":"")+'>›</button>'+
     (ehHoje?"":'<button class="hoje" data-a="hoje">Hoje</button>')+'</div></div>'+
     '<div class="pills">'+(seq?'<span class="pill chama'+(U.chama?" pulsa":"")+'" title="Dias seguidos com treino">'+CHAMA+seq+'</span>':"")+'</div></header>';
+  {const ub=D.ultimoBackup,dias=ub?diasEntre(ub,hoje()):null;
+    if(ehHoje&&!U.avisoFechado&&datas().length>=5&&(dias===null||dias>=30))
+      h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
   if(datas().length<4)h+='<p class="dica">Toque na série para marcar feita. Toque de novo se falhou, e outra vez para apagar.</p>';
   {const pr=pesoRascunho(),pd=D.pesos.find(x=>x.data===U.dia),igual=pd&&r1(pd.kg)===r1(num(pr.v)||0);
     const atras=p?diasEntre(p.data,hoje()):null;
@@ -795,7 +833,7 @@ function telaAjustes(){
     '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Forte</th><th>Máquina</th></tr></thead><tbody>';
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
   h+='</tbody></table><div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos valores sugeridos</button></div></section>';
-  h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
+  h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><p style="margin-top:6px;color:var(--ink3)">'+(D.ultimoBackup?"Último backup: "+dm(D.ultimoBackup)+"/"+D.ultimoBackup.slice(0,4):"Nenhum backup ainda")+'</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
   return h;
 }
 
@@ -818,7 +856,7 @@ function textoDor(){
 }
 function folha(){
   if(U.folha==="sessao"){
-    let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+(temSeries(D.sessoes[U.dia])?'Como foi o fortalecimento?</h2><p class="sub">Intensidade do treino específico: 0 é leve, 10 é muito intenso.</p><div class="esforco">':'Como foi o dia?</h2><p class="sub">Sem séries de fortalecimento hoje.</p><div>');
+    let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+(temSeries(D.sessoes[U.dia])?'Como foi o fortalecimento?</h2><p class="sub">Intensidade do treino específico: 0 é leve, 10 é muito intenso.</p><div class="esforco">':'Como foi o dia?</h2><p class="sub">Sem séries de fortalecimento '+(U.dia===hoje()?"hoje":"neste dia")+'.</p><div>');
     if(temSeries(D.sessoes[U.dia]))for(let i=0;i<=10;i++)h+='<button data-a="esf" data-v="'+i+'" aria-pressed="'+(U.esf===i)+'">'+i+'</button>';
     h+='</div><div class="bloco"><h3>Dor nos dedos</h3><div class="dual"><button data-a="dor" data-v="0" aria-pressed="'+!U.dorSim+'">Sem dor</button><button data-a="dor" data-v="1" aria-pressed="'+U.dorSim+'">Tive dor</button></div>';
     if(U.dorSim){
@@ -826,13 +864,18 @@ function folha(){
         '<div class="legenda"><span><i style="background:var(--d1)"></i>leve</span><span><i style="background:var(--d2)"></i>moderada</span><span><i style="background:var(--d3)"></i>aguda</span></div>'+
         '<p class="dor-txt">'+esc(textoDor())+'</p>';
     }
-    h+='</div><div class="bloco"><h3>Escalou hoje?</h3><div class="dual"><button data-a="esc" data-v="0" aria-pressed="'+(U.escSim===false)+'">Não</button><button data-a="esc" data-v="1" aria-pressed="'+(U.escSim===true)+'">Sim</button></div>';
+    h+='</div><div class="bloco"><h3>'+(U.dia===hoje()?"Escalou hoje?":"Escalou neste dia?")+'</h3><div class="dual"><button data-a="esc" data-v="0" aria-pressed="'+(U.escSim===false)+'">Não</button><button data-a="esc" data-v="1" aria-pressed="'+(U.escSim===true)+'">Sim</button></div>';
     if(U.escSim){
       h+='<h4>Tempo de escalada</h4><div class="tempos">'+TEMPOS.map(m=>'<button data-a="esc-min" data-v="'+m+'" aria-pressed="'+(U.escMin===m)+'">'+(m===180?"3h+":fmtMin(m))+'</button>').join("")+'</div>';
       h+='<h4>Intensidade</h4><div class="intens">'+ESC_INT.map(x=>'<button data-a="esc-int" data-v="'+x[0]+'" aria-pressed="'+(U.escInt===x[0])+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>').join("")+'</div>';
     }
     h+='</div>'+(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
     return h;
+  }
+  if(U.folha==="importar"&&U.imp){
+    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Substituir os dados?</h2>'+
+      '<p class="sub">O backup tem '+esc(resumoDados(U.imp))+'.</p><p class="sub">Hoje o app tem '+esc(resumoDados(D))+'. Isso tudo será trocado pelo backup.</p>'+
+      '<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Cancelar</button><button class="btn" data-a="importar-ok">Substituir</button></div></div></div>';
   }
   return "";
 }
@@ -849,7 +892,7 @@ function celebracao(){
   let arte="",tit="",txt="",extra="",cls="";
   if(ev.tipo==="recorde"){tit="Recorde!";txt=ev.texto;arte=ave(e,{fase:st.fase,cur:st.cur});cls="festa";extra=confete()}
   else if(ev.tipo==="forca"){tit="Mais forte";txt=ev.texto;arte=ave(e,{fase:st.fase,flex:true,cur:st.cur});cls="festa";extra='<span class="flutua">+'+nf1.format(ev.ganho)+'%</span>'}
-  else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida: "+D.cortes[e.k][ev.para-1]+"% do peso no "+e.nome.toLowerCase()+". Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de});extra=confete()}
+  else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida: "+D.cortes[e.k][ev.para-1]+"% do peso no "+e.nome.toLowerCase()+". Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
   else if(ev.tipo==="regrediu"){tit="Perdeu força";txt="Sem repetir a marca nos últimos "+JANELA+" dias, o "+e.nome.toLowerCase()+" voltou para "+FASES[ev.para]+". Um bom treino e ele volta.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit="Dedo dolorido";txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
@@ -926,7 +969,9 @@ document.addEventListener("click",ev=>{
     case "peso-menos":{const pr=pesoRascunho();pr.v=r1((num(pr.v)||70)-.1);render();break}
     case "peso-mais":{const pr=pesoRascunho();pr.v=r1((num(pr.v)||70)+.1);render();break}
     case "peso-salvar":salvarPeso();break;
-    case "fundo":U.folha=null;render();break;
+    case "fundo":case "fundo-fechar":U.folha=null;U.imp=null;render();break;
+    case "importar-ok":confirmarImport();break;
+    case "aviso-fechar":U.avisoFechado=true;render();break;
     case "exportar":exportar();break;
     case "importar":$("#arquivo").click();break;
     case "cortes-padrao":D.cortes=JSON.parse(JSON.stringify(CORTES));verificarFases();gravar();toast("Cortes restaurados");render();break;
@@ -946,17 +991,23 @@ document.addEventListener("change",ev=>{
 });
 document.addEventListener("keydown",ev=>{
   if(ev.key==="Enter"&&ev.target.matches("input[data-a]"))ev.target.blur();
-  if(ev.key==="Escape"){if(U.fila.length){U.fila.shift();render()}else if(U.folha){U.folha=null;render()}}
+  if(ev.key==="Escape"){if(U.fila.length){U.fila.shift();render()}else if(U.folha){U.folha=null;U.imp=null;render()}}
 });
 $("#arquivo").addEventListener("change",ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importar(String(r.result));r.readAsText(f);ev.target.value=""});
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){U.fila=U.fila.concat(verificarFases());gravar();render()}});
+let diaAberto=hoje();
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState!=="visible")return;
+  // se o app ficou aberto de um dia para o outro, volta para o treino de hoje
+  const h=hoje();if(h!==diaAberto){if(U.dia===diaAberto)U.dia=h;diaAberto=h;U.pd=null}
+  U.fila=U.fila.concat(verificarFases());gravar();render();
+});
 
 
 /* ================= abertura: frango evoluindo ================= */
 function abertura(){
   const el=$("#abertura");if(!el)return;
   if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){el.remove();return}
-  el.innerHTML='<div class="caixa"><div class="msc-g">'+ave({cor:"#FFC83D"},{fase:0})+'</div><h1>Diário de Escalada</h1><p class="nome-fase">'+FASES[0]+'</p><div class="passos"><i class="on"></i><i></i><i></i><i></i></div></div>';
+  el.innerHTML='<div class="caixa"><div class="msc-g">'+ave({cor:"#FFC83D"},{fase:0,todas:true})+'</div><h1>Diário de Escalada</h1><p class="nome-fase">'+FASES[0]+'</p><div class="passos"><i class="on"></i><i></i><i></i><i></i></div></div>';
   const svg=el.querySelector("svg"),bu=svg.querySelector(".burst");bu.setAttribute("stroke","#fff");
   let f=0,fim=false;const ts=[];
   const trocar=n=>{
@@ -974,6 +1025,7 @@ function abertura(){
 U.fila=verificarFases();gravar();
 render();
 abertura();
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persisted().then(p=>p||navigator.storage.persist()).catch(()=>{});
 if("serviceWorker" in navigator){try{navigator.serviceWorker.register("sw.js").catch(function(){})}catch(e){}}
 })();
 </script>
