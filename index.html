@@ -166,7 +166,7 @@ nav button[aria-current=page]{color:var(--gema)}
 @keyframes fade{from{opacity:0}}
 .folha h2{font-size:30px;margin-bottom:4px}
 .folha .sub{font-size:13px;color:var(--ink3);margin-bottom:12px}
-.esforco{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.esforco{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .esforco button{height:48px;border-radius:12px;background:var(--s2);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
 .esforco button[aria-pressed=true]{background:var(--gema);color:var(--gema-ink)}
 .bloco{margin-top:22px}
@@ -412,6 +412,10 @@ const temSeries=s=>!!s&&Object.keys(s.s||{}).some(k=>(s.s[k]||[]).some(Boolean))
 const datas=()=>Object.keys(D.sessoes).sort();
 
 let D=carregar();
+/* carga sem nenhuma série registrada volta a 0 (ajuste de + e − sem registrar não conta) */
+(function(){let mudou=false;Object.keys(D.carga||{}).forEach(sl=>{
+  const tem=Object.keys(D.sessoes).some(d=>((D.sessoes[d].s||{})[sl]||[]).some(Boolean));
+  if(!tem){delete D.carga[sl];mudou=true}});if(mudou)gravar()})();
 
 /* ================= cálculos ================= */
 function pesoEm(dia){
@@ -569,13 +573,13 @@ function ajustarCarga(slot,delta){
 }
 function abrirSessao(){
   const s=D.sessoes[U.dia]||{};
-  U.esf=temEsf(s)?s.esforco:null;U.escSim=s.escalada?true:(s.escalada===false?false:null);U.escMin=s.escalada?s.escalada.min:null;U.escInt=s.escalada?s.escalada.int:null;U.dorP=Object.assign({},s.dor||{});U.dorSim=!!s.dor&&Object.keys(s.dor).length>0;U.erro="";
+  U.esf=temEsf(s)&&s.esforco>0?s.esforco:null;U.escSim=s.escalada?true:(s.escalada===false?false:null);U.escMin=s.escalada?s.escalada.min:null;U.escInt=s.escalada?s.escalada.int:null;U.dorP=Object.assign({},s.dor||{});U.dorSim=!!s.dor&&Object.keys(s.dor).length>0;U.erro="";
   U.mao=Object.keys(U.dorP).some(k=>k.indexOf("esquerda:")===0)||!Object.keys(U.dorP).length?"esquerda":"direita";
   U.folha="sessao";U.abre=true;render();
 }
 function salvarSessao(){
   const forta=temSeries(D.sessoes[U.dia]);
-  if(forta&&U.esf==null){U.erro="Escolha a intensidade do fortalecimento de 0 a 10.";return render()}
+  if(forta&&U.esf==null){U.erro="Escolha a intensidade do fortalecimento de 1 a 10.";return render()}
   if(U.dorSim&&!Object.keys(U.dorP).length){U.erro="Toque onde doeu ou escolha Sem dor.";return render()}
   if(U.escSim==null){U.erro="Diga se você escalou.";return render()}
   if(U.escSim&&!U.escMin){U.erro="Escolha quanto tempo você escalou.";return render()}
@@ -864,8 +868,8 @@ function textoDor(){
 }
 function folha(){
   if(U.folha==="sessao"){
-    let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+(temSeries(D.sessoes[U.dia])?'Como foi o fortalecimento?</h2><p class="sub">Intensidade do treino específico: 0 é leve, 10 é muito intenso.</p><div class="esforco">':'Como foi o dia?</h2><p class="sub">Sem séries de fortalecimento '+(U.dia===hoje()?"hoje":"neste dia")+'.</p><div>');
-    if(temSeries(D.sessoes[U.dia]))for(let i=0;i<=10;i++)h+='<button data-a="esf" data-v="'+i+'" aria-pressed="'+(U.esf===i)+'">'+i+'</button>';
+    let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+(temSeries(D.sessoes[U.dia])?'Como foi o fortalecimento?</h2><p class="sub">Intensidade do treino específico: 1 é leve, 10 é muito intenso.</p><div class="esforco">':'Como foi o dia?</h2><p class="sub">Sem séries de fortalecimento '+(U.dia===hoje()?"hoje":"neste dia")+'.</p><div>');
+    if(temSeries(D.sessoes[U.dia]))for(let i=1;i<=10;i++)h+='<button data-a="esf" data-v="'+i+'" aria-pressed="'+(U.esf===i)+'">'+i+'</button>';
     h+='</div><div class="bloco"><h3>Dor nos dedos</h3><div class="dual"><button data-a="dor" data-v="0" aria-pressed="'+!U.dorSim+'">Sem dor</button><button data-a="dor" data-v="1" aria-pressed="'+U.dorSim+'">Tive dor</button></div>';
     if(U.dorSim){
       h+='<div class="dual abas-mao">'+abaMao("esquerda","Mão esquerda")+abaMao("direita","Mão direita")+'</div><div class="mao-box">'+mapaMao(U.mao)+'</div>'+
