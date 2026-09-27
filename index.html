@@ -162,7 +162,7 @@ nav button[aria-current=page]{color:var(--gema)}
 @keyframes fade{from{opacity:0}}
 .folha h2{font-size:30px;margin-bottom:4px}
 .folha .sub{font-size:13px;color:var(--ink3);margin-bottom:12px}
-.esforco{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.esforco{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
 .esforco button{height:48px;border-radius:12px;background:var(--s2);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
 .esforco button[aria-pressed=true]{background:var(--gema);color:var(--gema-ink)}
 .bloco{margin-top:22px}
@@ -170,6 +170,16 @@ nav button[aria-current=page]{color:var(--gema)}
 .dual{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .dual button{height:46px;border-radius:12px;background:var(--s2);font-weight:600}
 .dual button[aria-pressed=true]{background:var(--ink);color:#000}
+.bloco h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--ink2)}
+.tempos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tempos button{height:44px;border-radius:12px;background:var(--s2);font-weight:600;font-variant-numeric:tabular-nums}
+.tempos button[aria-pressed=true]{background:var(--gema);color:var(--gema-ink)}
+.intens{display:grid;gap:8px}
+.intens button{display:grid;gap:2px;text-align:left;padding:10px 14px;border-radius:12px;background:var(--s2)}
+.intens button b{font-size:16px}
+.intens button span{font-size:13px;color:var(--ink3)}
+.intens button[aria-pressed=true]{background:var(--gema);color:var(--gema-ink)}
+.intens button[aria-pressed=true] span{color:var(--gema-ink);opacity:.8}
 .maos-mapa{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
 .mao h4{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--ink2);text-align:center}
 .dedos{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;align-items:end}
@@ -318,9 +328,9 @@ nav button[aria-current=page]{color:var(--gema)}
 const EX=[
   {k:"maxhang", nome:"Max hang",    curto:"Max hang",  proto:"3 × 10 s na agarra de 20 mm",               lev:false, maos:false, ini:0,  cor:"#2E4057"},
   {k:"resist",  nome:"Resistência", curto:"Resist.",   proto:"3 × 6 repeaters de 7 s / 3 s, agarra de 20 mm", lev:false, maos:false, ini:0,  cor:"#463C6E"},
-  {k:"edge",    nome:"Finger edge", curto:"Edge",      proto:"3 × 10 s por mão no bloco de 20 mm",         lev:true,  maos:true,  ini:20, cor:"#2F5A4A"},
-  {k:"barra",   nome:"Barra",       curto:"Barra",     proto:"3 × 5 repetições",                           lev:false, maos:false, ini:0,  cor:"#6E4230"},
-  {k:"pinca",   nome:"Pinça",       curto:"Pinça",     proto:"3 × 8 puxadas por mão",                      lev:true,  maos:true,  ini:10, cor:"#6B5A22"}
+  {k:"edge",    nome:"Edge Lift",   curto:"Edge",      proto:"3 × 10 s por mão no bloco de 20 mm",         lev:true,  maos:true,  ini:20, cor:"#2F5A4A"},
+  {k:"barra",   nome:"Barra Pronada", curto:"Barra",   proto:"3 × 5 repetições",                           lev:false, maos:false, ini:0,  cor:"#6E4230"},
+  {k:"pinca",   nome:"Pinch",       curto:"Pinch",     proto:"3 × 8 puxadas por mão",                      lev:true,  maos:true,  ini:10, cor:"#6B5A22"}
 ];
 const CORTES={maxhang:[115,125,145], resist:[105,115,125], edge:[20,35,50], barra:[105,115,125], pinca:[15,25,35]};
 const FASES=["Franguinho","Frango","Frango forte","Frango máquina"];
@@ -329,6 +339,10 @@ const DEDOS=[["polegar","Polegar","Pol"],["indicador","Indicador","Ind"],["medio
 const SEGS_POL=[["Distal","f"],["IP","a"],["Proximal","f"],["MCP","a"]];
 const SEGS=[["Distal","f"],["DIP","a"],["Média","f"],["PIP","a"],["Proximal","f"],["MCP","a"]];
 const INTENS=["leve","moderada","aguda"];
+const TEMPOS=[30,60,90,120,150,180];
+const ESC_INT=[["leve","Leve","Mais conversei que escalei"],["moderada","Moderada","Escalei com moderação"],["intensa","Intensa","Apertei e me passei"]];
+const fmtMin=m=>m<60?m+" min":Math.floor(m/60)+"h"+(m%60?String(m%60).padStart(2,"0"):"");
+const temEsf=s=>!!s&&typeof s.esforco==="number";
 const K3="diario-escalada-v3", K2="diario-escalada-v2";
 const DIAS_ENF=10, JANELA=30;
 
@@ -528,7 +542,7 @@ function marcar(slot,i){
   else a[i]=null;
   if(a[i])D.carga[slot]=a[i].c;
   if(!a.some(Boolean))delete s.s[slot];
-  if(!temSeries(s)&&s.esforco==null&&!s.dor)delete D.sessoes[U.dia];
+  if(!temSeries(s)&&s.esforco==null&&!s.dor&&!s.escalada)delete D.sessoes[U.dia];
   U.pop=slot+":"+i;
   let ev=virouOk?eventosSerie(slot):[];
   ev=ev.concat(verificarFases());
@@ -549,17 +563,24 @@ function ajustarCarga(slot,delta){
 }
 function abrirSessao(){
   const s=D.sessoes[U.dia]||{};
-  U.esf=s.esforco||null;U.dorP=Object.assign({},s.dor||{});U.dorSim=!!s.dor&&Object.keys(s.dor).length>0;U.erro="";
+  U.esf=temEsf(s)?s.esforco:null;U.escSim=s.escalada?true:(s.escalada===false?false:null);U.escMin=s.escalada?s.escalada.min:null;U.escInt=s.escalada?s.escalada.int:null;U.dorP=Object.assign({},s.dor||{});U.dorSim=!!s.dor&&Object.keys(s.dor).length>0;U.erro="";
   U.folha="sessao";U.abre=true;render();
 }
 function salvarSessao(){
-  if(!U.esf){U.erro="Escolha o esforço de 1 a 10.";return render()}
+  const forta=temSeries(D.sessoes[U.dia]);
+  if(forta&&U.esf==null){U.erro="Escolha a intensidade do fortalecimento de 0 a 10.";return render()}
   if(U.dorSim&&!Object.keys(U.dorP).length){U.erro="Toque onde doeu ou escolha Sem dor.";return render()}
+  if(U.escSim==null){U.erro="Diga se você escalou hoje.";return render()}
+  if(U.escSim&&!U.escMin){U.erro="Escolha quanto tempo você escalou.";return render()}
+  if(U.escSim&&!U.escInt){U.erro="Escolha a intensidade da escalada.";return render()}
+  if(!forta&&!U.escSim&&!U.dorSim){U.erro="Nada para salvar: sem séries, sem escalada e sem dor.";return render()}
   const s=sessao(D,U.dia,true);
-  s.esforco=U.esf;s.dor=U.dorSim?Object.assign({},U.dorP):null;
+  s.esforco=forta?U.esf:null;s.dor=U.dorSim?Object.assign({},U.dorP):null;
+  s.escalada=U.escSim?{min:U.escMin,int:U.escInt}:false;
   gravar();U.folha=null;
-  U.fila.push({tipo:"esforco",nota:s.esforco});
+  if(forta)U.fila.push({tipo:"esforco",nota:s.esforco});
   if(s.dor){const m=Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]));U.fila.push({tipo:"dor",nivel:m})}
+  if(s.escalada)U.fila.push({tipo:"escalada",min:s.escalada.min,int:s.escalada.int});
   toast("Sessão salva");render();
 }
 let tArm;
@@ -639,10 +660,12 @@ function telaTreino(){
     h+='</section>';
   });
   h+='<div class="fechar">';
-  if(s&&s.esforco){
+  if(s&&(temEsf(s)||s.escalada!=null)){
     const dor=s.dor&&Object.keys(s.dor).length?"dor "+INTENS[Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]))-1]:"sem dor";
-    h+='<div class="resumo-sess"><span>Esforço <b>'+s.esforco+' de 10</b>, '+dor+'</span><button data-a="sessao">Editar</button></div>';
-  }else h+='<button class="btn" data-a="sessao"'+(temSeries(s)?"":" disabled")+'>Registrar esforço e dor</button>';
+    const pt=[];if(temEsf(s))pt.push('Fortalecimento <b>'+s.esforco+' de 10</b>');pt.push(dor);
+    pt.push(s.escalada?'escalou <b>'+fmtMin(s.escalada.min)+'</b> '+(s.escalada.int==="moderada"?"moderado":s.escalada.int==="intensa"?"intenso":"leve"):"não escalou");
+    h+='<div class="resumo-sess"><span>'+pt.join(", ")+'</span><button data-a="sessao">Editar</button></div>';
+  }else h+='<button class="btn" data-a="sessao">'+(temSeries(s)?"Registrar fortalecimento, dor e escalada":"Registrar escalada")+'</button>';
   h+='</div>';
   U.pop=null;
   return h;
@@ -676,15 +699,15 @@ function grafico(e){
   return s;
 }
 function graficoSemana(){
-  const ds=datas();if(!ds.some(d=>D.sessoes[d].esforco))return '<p class="vazio">Registre o esforço ao fim de cada treino para ver a carga da semana.</p>';
+  const ds=datas();if(!ds.some(d=>temEsf(D.sessoes[d])))return '<p class="vazio">Registre a intensidade do fortalecimento ao fim de cada treino para ver a carga da semana.</p>';
   const seg=d=>{const x=dt(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return iso(x)};
   let ini=seg(ds[0]);const fimSem=seg(hoje());
   if(diasEntre(ini,fimSem)<49)ini=somaDias(fimSem,-49);
   const sem=[];for(let d=ini;d<=fimSem;d=somaDias(d,7))sem.push({ini:d,fim:somaDias(d,6),esf:0,dor:0});
-  ds.forEach(d=>{const w=sem.find(x=>d>=x.ini&&d<=x.fim);if(!w)return;const s=D.sessoes[d];if(s.esforco)w.esf+=s.esforco;
+  ds.forEach(d=>{const w=sem.find(x=>d>=x.ini&&d<=x.fim);if(!w)return;const s=D.sessoes[d];if(temEsf(s))w.esf+=s.esforco;
     if(s.dor)Object.keys(s.dor).forEach(k=>{w.dor=Math.max(w.dor,s.dor[k])})});
   const sl=42,H=160,m={t:18,b:24},ph=H-m.t-m.b,W=sem.length*sl+8,mx=Math.max(10,Math.max.apply(null,sem.map(x=>x.esf))),bw=24;
-  let s='<svg class="px" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Soma do esforço por semana">';
+  let s='<svg class="px" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Soma da intensidade do fortalecimento por semana">';
   s+='<line class="gl" x1="0" x2="'+W+'" y1="'+(m.t+ph)+'" y2="'+(m.t+ph)+'"/>';
   sem.forEach((w,i)=>{
     const cx=4+sl*i+sl/2,h=w.esf/mx*ph,y=m.t+ph-h;
@@ -747,7 +770,7 @@ function telaEvolucao(){
     if(st.enf)h+='<span class="enf">Parado há '+diasEntre(ultimoTreino(e),hoje())+' dias: enferrujando.</span>';
     h+='</div><div class="grafico">'+grafico(e)+'</div></section>';
   });
-  h+='<h2 class="sec-t">Esforço por semana</h2><p class="sec-sub">Soma das notas de esforço. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
+  h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma das notas de intensidade do fortalecimento. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
   h+=secaoPeso();
   const ds=datas().reverse();
   h+='<h2 class="sec-t">Sessões</h2>'+(ds.length?'<p class="sec-sub">'+ds.length+(ds.length>1?' sessões':' sessão')+'</p>':'');
@@ -756,8 +779,9 @@ function telaEvolucao(){
     h+='<div class="rolagem-y"><ul class="lista">';
     ds.forEach(d=>{const s=D.sessoes[d],partes=[];
       EX.forEach(e=>{if(slotsDe(e).some(sl=>(s.s[sl]||[]).some(Boolean)))partes.push(e.curto)});
+      if(s.escalada)partes.push("Escalada "+fmtMin(s.escalada.min));
       const dor=s.dor&&Object.keys(s.dor).length?Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k])):0;
-      h+='<li><button class="ses-info" data-a="abrir" data-v="'+d+'"><time>'+dm(d)+'</time><em>'+(partes.join(", ")||"Sem séries")+'</em><span class="esf">'+(s.esforco?s.esforco+"/10":"")+(dor?'<span class="dot" style="background:var(--d'+dor+')"></span>':"")+'</span></button>'+
+      h+='<li><button class="ses-info" data-a="abrir" data-v="'+d+'"><time>'+dm(d)+'</time><em>'+(partes.join(", ")||"Sem séries")+'</em><span class="esf">'+(temEsf(s)?s.esforco+"/10":"")+(dor?'<span class="dot" style="background:var(--d'+dor+')"></span>':"")+'</span></button>'+
         '<button class="ses-bt" data-a="abrir" data-v="'+d+'" aria-label="Editar sessão de '+dm(d)+'">'+ICONES.editar+'</button>'+
         (U.armado===d?'<button class="ses-bt armado" data-a="excluir" data-v="'+d+'">Excluir?</button>':'<button class="ses-bt" data-a="excluir" data-v="'+d+'" aria-label="Excluir sessão de '+dm(d)+'">'+ICONES.lixo+'</button>')+'</li>'});
     h+='</ul></div>';
@@ -794,13 +818,18 @@ function textoDor(){
 }
 function folha(){
   if(U.folha==="sessao"){
-    let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Como foi o treino?</h2><p class="sub">1 é leve, 10 é no limite.</p><div class="esforco">';
-    for(let i=1;i<=10;i++)h+='<button data-a="esf" data-v="'+i+'" aria-pressed="'+(U.esf===i)+'">'+i+'</button>';
+    let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+(temSeries(D.sessoes[U.dia])?'Como foi o fortalecimento?</h2><p class="sub">Intensidade do treino específico: 0 é leve, 10 é muito intenso.</p><div class="esforco">':'Como foi o dia?</h2><p class="sub">Sem séries de fortalecimento hoje.</p><div>');
+    if(temSeries(D.sessoes[U.dia]))for(let i=0;i<=10;i++)h+='<button data-a="esf" data-v="'+i+'" aria-pressed="'+(U.esf===i)+'">'+i+'</button>';
     h+='</div><div class="bloco"><h3>Dor nos dedos</h3><div class="dual"><button data-a="dor" data-v="0" aria-pressed="'+!U.dorSim+'">Sem dor</button><button data-a="dor" data-v="1" aria-pressed="'+U.dorSim+'">Tive dor</button></div>';
     if(U.dorSim){
       h+='<div class="maos-mapa">'+mapaMao("esquerda")+mapaMao("direita")+'</div>'+
         '<div class="legenda"><span><i style="background:var(--d1)"></i>leve</span><span><i style="background:var(--d2)"></i>moderada</span><span><i style="background:var(--d3)"></i>aguda</span></div>'+
         '<p class="dor-txt">'+esc(textoDor())+'</p>';
+    }
+    h+='</div><div class="bloco"><h3>Escalou hoje?</h3><div class="dual"><button data-a="esc" data-v="0" aria-pressed="'+(U.escSim===false)+'">Não</button><button data-a="esc" data-v="1" aria-pressed="'+(U.escSim===true)+'">Sim</button></div>';
+    if(U.escSim){
+      h+='<h4>Tempo de escalada</h4><div class="tempos">'+TEMPOS.map(m=>'<button data-a="esc-min" data-v="'+m+'" aria-pressed="'+(U.escMin===m)+'">'+(m===180?"3h+":fmtMin(m))+'</button>').join("")+'</div>';
+      h+='<h4>Intensidade</h4><div class="intens">'+ESC_INT.map(x=>'<button data-a="esc-int" data-v="'+x[0]+'" aria-pressed="'+(U.escInt===x[0])+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>').join("")+'</div>';
     }
     h+='</div>'+(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
     return h;
@@ -827,7 +856,11 @@ function celebracao(){
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
   else if(ev.tipo==="esforco"){const n=ev.nota<=4?0:ev.nota<=7?1:2;
     tit=["Treino fofo","Treino normal","Espanco!"][n];
-    txt=["Esforço "+ev.nota+". Treino fofinho: recuperar também é treino.","Esforço "+ev.nota+". Treino honesto, cumpriu o combinado.","Esforço "+ev.nota+". Capricha no descanso e na comida hoje."][n];
+    txt=["Fortalecimento "+ev.nota+". Treino fofinho: recuperar também é treino.","Fortalecimento "+ev.nota+". Treino honesto, cumpriu o combinado.","Fortalecimento "+ev.nota+". Capricha no descanso e na comida hoje."][n];
+    arte=cena(CENA_ESF[n],["#35507a","#2F5A4A","#6E4230"][n])}
+  else if(ev.tipo==="escalada"){const n=Math.max(0,ESC_INT.findIndex(x=>x[0]===ev.int));
+    tit=["Resenha","Na medida","Me passei!"][n];
+    txt=ESC_INT[n][2]+". "+fmtMin(ev.min)+(ev.min>=180?" ou mais":"")+" de escalada.";
     arte=cena(CENA_ESF[n],["#35507a","#2F5A4A","#6E4230"][n])}
   return '<div class="cel" data-a="cel" role="dialog" aria-modal="true" aria-labelledby="cel-t">'+extra+'<div class="cel-box">'+
     (ev.tipo==="sequencia"?arte:'<div class="msc-g '+cls+'" data-evo="'+(ev.tipo==="evoluiu"?ev.para:"")+'">'+arte+'</div>')+
@@ -884,6 +917,9 @@ document.addEventListener("click",ev=>{
     case "ir":{const el=document.getElementById(v);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});break}
     case "sessao":abrirSessao();break;
     case "esf":U.esf=+v;U.erro="";render();break;
+    case "esc":U.escSim=v==="1";U.erro="";render();break;
+    case "esc-min":U.escMin=+v;U.erro="";render();break;
+    case "esc-int":U.escInt=v;U.erro="";render();break;
     case "dor":U.dorSim=v==="1";if(!U.dorSim)U.dorP={};U.erro="";render();break;
     case "dorseg":{const n=((U.dorP[v]||0)+1)%4;if(n)U.dorP[v]=n;else delete U.dorP[v];U.erro="";render();break}
     case "salvar-sessao":salvarSessao();break;
