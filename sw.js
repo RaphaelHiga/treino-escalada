@@ -1,8 +1,8 @@
 // Service worker do Diário de Escalada.
 // Guarda uma cópia do app no aparelho para ele abrir sem internet.
 // Com internet, busca a versão mais nova; sem internet, usa a cópia guardada.
-// Se você publicar uma atualização, aumente o número em CACHE (v10 -> v11).
-const CACHE = "diario-escalada-app-v10";
+// Se você publicar uma atualização, aumente o número em CACHE (v11 -> v12).
+const CACHE = "diario-escalada-app-v11";
 const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

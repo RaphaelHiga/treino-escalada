@@ -72,6 +72,8 @@ p{margin:0}
 .stp span{font-size:12px;color:var(--ink3);margin:0 2px 0 -6px}
 .sets{display:flex;gap:8px;margin-left:auto}
 .set{width:52px;height:48px;border-radius:14px;background:var(--s1);display:grid;place-items:center;font-weight:700;font-size:15px;color:var(--ink3);font-variant-numeric:tabular-nums;position:relative;transition:background .15s}
+.set.largo{width:172px;font-size:15px}
+.proto.alerta{color:var(--gema)}
 .set.ok{background:var(--gema);color:var(--gema-ink)}
 .set.falha{background:transparent;box-shadow:inset 0 0 0 2px var(--d3);color:var(--d3)}
 .set.falha::after{content:"";position:absolute;left:10px;right:10px;top:50%;height:2px;background:var(--d3);transform:rotate(-18deg)}
@@ -485,6 +487,7 @@ function ave(e,o){
     '<g class="ave">'+PARTES.map((p,i)=>'<g class="st'+(i===f?" on":"")+'" data-f="'+i+'">'+p+'</g>').join("")+'</g>'+
     (o.enf?FERRUGEM:"")+(o.cur?CURATIVO:"")+'</svg>';
 }
+const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="23" fill="#3a3935"/><rect x="11" y="12" width="24" height="22" rx="6" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.6"/><path d="M16 20 a7 7 0 0 1 14 0z" fill="#FFC83D" stroke="#2B2B2B" stroke-width="1.4"/><path d="M23 20 l3 -4" stroke="#2B2B2B" stroke-width="1.6" stroke-linecap="round"/></svg>';
 const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z" fill="#FF8C1A"/><path d="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z" fill="#FFC83D"/></svg>';
 
 /* ================= estado de tela ================= */
@@ -570,13 +573,17 @@ function excluirPeso(d){
   if(U.armado!==k){U.armado=k;clearTimeout(tArm);tArm=setTimeout(()=>{if(U.armado===k){U.armado=null;render()}},3500);return render()}
   clearTimeout(tArm);U.armado=null;D.pesos=D.pesos.filter(p=>p.data!==d);verificarFases();gravar();toast("Peso de "+dm(d)+" excluído");render();
 }
-function abrirPeso(){const p=pesoAtual();U.peso=p?p.kg:70;U.erro="";U.folha="peso";U.abre=true;render()}
+function pesoRascunho(){
+  if(!U.pd||U.pd.dia!==U.dia){const pd=D.pesos.find(p=>p.data===U.dia);U.pd={dia:U.dia,v:pd?pd.kg:(pesoEm(U.dia)||70)}}
+  return U.pd;
+}
 function salvarPeso(){
-  const v=num(U.peso);
-  if(!v||v<30||v>250){U.erro="Informe um peso entre 30 e 250 kg.";return render()}
-  const d=hoje();D.pesos=D.pesos.filter(p=>p.data!==d);D.pesos.push({data:d,kg:r1(v)});D.pesos.sort((a,b)=>a.data<b.data?-1:1);
-  U.fila=U.fila.concat(verificarFases());
-  gravar();U.folha=null;toast("Peso salvo");render();
+  const v=num(pesoRascunho().v);
+  if(!v||v<30||v>250){toast("Informe um peso entre 30 e 250 kg");return render()}
+  const d=U.dia,antes=D.pesos.find(p=>p.data===d);
+  D.pesos=D.pesos.filter(p=>p.data!==d);D.pesos.push({data:d,kg:r1(v)});D.pesos.sort((a,b)=>a.data<b.data?-1:1);
+  U.fila=U.fila.concat(verificarFases());U.pop="peso";
+  gravar();toast(antes?"Peso atualizado":"Peso salvo");render();
 }
 function exportar(){
   const blob=new Blob([JSON.stringify(Object.assign({app:"diario-escalada",exportadoEm:new Date().toISOString()},D),null,2)],{type:"application/json"});
@@ -602,11 +609,15 @@ function telaTreino(){
     '<div class="dia"><button data-a="dia" data-v="-1" aria-label="Dia anterior">‹</button><span>'+esc(dataTxt)+'</span>'+
     '<button data-a="dia" data-v="1" aria-label="Próximo dia"'+(ehHoje?" disabled":"")+'>›</button>'+
     (ehHoje?"":'<button class="hoje" data-a="hoje">Hoje</button>')+'</div></div>'+
-    '<div class="pills">'+(seq?'<span class="pill chama'+(U.chama?" pulsa":"")+'" title="Dias seguidos com treino">'+CHAMA+seq+'</span>':"")+
-    '<button class="pill" data-a="peso">'+(p?nf1.format(p.kg)+" kg":"Peso")+'</button></div></header>';
-  if(!p)h+='<div class="aviso"><span>Registre seu peso para calcular a força relativa.</span><button data-a="peso">Registrar</button></div>';
-  else if(diasEntre(p.data,hoje())>7)h+='<div class="aviso"><span>Último peso há '+diasEntre(p.data,hoje())+' dias.</span><button data-a="peso">Atualizar</button></div>';
+    '<div class="pills">'+(seq?'<span class="pill chama'+(U.chama?" pulsa":"")+'" title="Dias seguidos com treino">'+CHAMA+seq+'</span>':"")+'</div></header>';
   if(datas().length<4)h+='<p class="dica">Toque na série para marcar feita. Toque de novo se falhou, e outra vez para apagar.</p>';
+  {const pr=pesoRascunho(),pd=D.pesos.find(x=>x.data===U.dia),igual=pd&&r1(pd.kg)===r1(num(pr.v)||0);
+    const atras=p?diasEntre(p.data,hoje()):null;
+    const sub=pd?"Registrado neste dia":p?"Último: "+nf1.format(p.kg)+" kg em "+dm(p.data)+(ehHoje&&atras>7?", há "+atras+" dias":""):"Base para calcular a força relativa";
+    h+='<section class="ex"><div class="ex-top"><div class="av">'+BALANCA+'</div><div><h2>Peso corporal</h2><p class="proto'+(ehHoje&&(!p||atras>7)&&!pd?" alerta":"")+'">'+sub+'</p></div>'+
+      (p?'<span class="rel">'+nf1.format(p.kg)+'<small>kg atual</small></span>':"")+'</div>'+
+      '<div class="linha"><div class="stp"><button data-a="peso-menos" aria-label="Menos 100 g">−</button><input data-a="peso-val" inputmode="decimal" value="'+nf1.format(num(pr.v)||0)+'" aria-label="Peso em kg"><span>kg</span><button data-a="peso-mais" aria-label="Mais 100 g">+</button></div>'+
+      '<div class="sets"><button class="set largo'+(igual?" ok":"")+(U.pop==="peso"?" pop":"")+'" data-a="peso-salvar">'+(igual?"Salvo":pd?"Atualizar":"Salvar")+'</button></div></div></section>';}
   EX.forEach(e=>{
     const st=estadoAve(e),mr=melhorRel(e,somaDias(hoje(),-JANELA)).rel;
     h+='<section class="ex"><div class="ex-top"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
@@ -696,12 +707,12 @@ function graficoPeso(){
 function secaoPeso(){
   const p=pesoAtual();
   let h='<h2 class="sec-t">Peso corporal</h2>';
-  if(!p)return h+'<p class="vazio">Nenhum peso registrado.</p><div class="linha-bt"><button class="btn sec" data-a="peso">Registrar peso de hoje</button></div>';
+  if(!p)return h+'<p class="vazio">Nenhum peso registrado. Registre na tela Treino.</p>';
   let ref=null;D.pesos.forEach(x=>{if(x.data<=somaDias(hoje(),-30))ref=x});
   const dif=ref?r1(p.kg-ref.kg):null;
   h+='<p class="num">'+nf1.format(p.kg)+'<small>kg em '+dm(p.data)+'</small></p>';
   if(dif!==null)h+='<p class="maos">'+(dif===0?"Estável":(dif>0?"+":"−")+nf1.format(Math.abs(dif))+" kg")+' em relação a 30 dias atrás</p>';
-  h+='<div class="grafico">'+graficoPeso()+'</div><div class="linha-bt"><button class="btn sec" data-a="peso">Registrar peso de hoje</button></div>';
+  h+='<div class="grafico">'+graficoPeso()+'</div>';
   h+='<div class="rolagem-y curta"><ul class="lista">';
   D.pesos.slice().reverse().forEach(x=>{const k="peso:"+x.data;
     h+='<li><div class="ses-info"><time>'+dm(x.data)+'</time><em>'+nf1.format(x.kg)+' kg</em><span></span></div><span></span>'+
@@ -756,7 +767,6 @@ function telaEvolucao(){
 function telaAjustes(){
   const p=pesoAtual();
   let h='<header class="topo"><div><h1>Ajustes</h1></div></header>';
-  h+='<section class="aj"><h2>Peso corporal</h2><p>'+(p?"Atual: "+nf1.format(p.kg)+" kg, registrado em "+dm(p.data)+".":"Nenhum peso registrado.")+'</p><div class="linha-bt"><button class="btn sec" data-a="peso">Registrar peso de hoje</button></div></section>';
   h+='<section class="aj"><h2>Cortes das fases</h2><p>Em % do peso corporal. Nos exercícios pendurados conta peso + carga; nos de levantar do chão, só a carga.</p>'+
     '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Forte</th><th>Máquina</th></tr></thead><tbody>';
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
@@ -794,11 +804,6 @@ function folha(){
     }
     h+='</div>'+(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
     return h;
-  }
-  if(U.folha==="peso"){
-    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Peso de hoje</h2><p class="sub">Base para a força relativa. Pese-se sempre nas mesmas condições.</p>'+
-      '<div class="peso-stp"><div class="stp"><button data-a="peso-d" data-v="-0.1" aria-label="Menos 100 g">−</button><input id="peso-in" inputmode="decimal" value="'+nf1.format(U.peso)+'" aria-label="Peso em kg"><span>kg</span><button data-a="peso-d" data-v="0.1" aria-label="Mais 100 g">+</button></div></div>'+
-      (U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-peso">Salvar peso</button></div></div>';
   }
   return "";
 }
@@ -882,9 +887,9 @@ document.addEventListener("click",ev=>{
     case "dor":U.dorSim=v==="1";if(!U.dorSim)U.dorP={};U.erro="";render();break;
     case "dorseg":{const n=((U.dorP[v]||0)+1)%4;if(n)U.dorP[v]=n;else delete U.dorP[v];U.erro="";render();break}
     case "salvar-sessao":salvarSessao();break;
-    case "peso":abrirPeso();break;
-    case "peso-d":{const i=$("#peso-in");U.peso=r1((num(i.value)||U.peso)+ +v);i.value=nf1.format(U.peso);break}
-    case "salvar-peso":U.peso=num($("#peso-in").value);salvarPeso();break;
+    case "peso-menos":{const pr=pesoRascunho();pr.v=r1((num(pr.v)||70)-.1);render();break}
+    case "peso-mais":{const pr=pesoRascunho();pr.v=r1((num(pr.v)||70)+.1);render();break}
+    case "peso-salvar":salvarPeso();break;
     case "fundo":U.folha=null;render();break;
     case "exportar":exportar();break;
     case "importar":$("#arquivo").click();break;
@@ -893,7 +898,8 @@ document.addEventListener("click",ev=>{
 });
 document.addEventListener("change",ev=>{
   const t=ev.target;
-  if(t.dataset.a==="carga"){const v=num(t.value),e=exDe(t.dataset.s);if(v===null)return render();D.carga[t.dataset.s]=e.lev?Math.max(0,r1(v)):r1(v);gravar();render()}
+  if(t.dataset.a==="peso-val"){const v=num(t.value);if(v!==null){pesoRascunho().v=r1(v);t.value=nf1.format(r1(v))}else t.value=nf1.format(num(pesoRascunho().v)||0);const b=document.querySelector("[data-a=peso-salvar]"),pd=D.pesos.find(x=>x.data===U.dia);if(b){const ig=pd&&r1(pd.kg)===r1(num(pesoRascunho().v));b.classList.toggle("ok",!!ig);b.textContent=ig?"Salvo":pd?"Atualizar":"Salvar"}return}
+  if(t.dataset.a==="carga"){const v=num(t.value),e=exDe(t.dataset.s);if(v===null){t.value=nf1.format(cargaAtual(t.dataset.s));return}D.carga[t.dataset.s]=e.lev?Math.max(0,r1(v)):r1(v);t.value=nf1.format(D.carga[t.dataset.s]);gravar()}
   else if(t.dataset.a==="corte"){
     const v=num(t.value),k=t.dataset.k,i=+t.dataset.i;
     if(v===null||v<=0)return render();
