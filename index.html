@@ -143,6 +143,11 @@ p{margin:0}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:1px}
 .sec-t{font-size:26px;margin:26px 0 4px}
 .sec-sub{font-size:13px;color:var(--ink3);margin-bottom:8px}
+.estagios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.estagios div{display:grid;justify-items:center;align-content:start;gap:2px;text-align:center}
+.estagios svg{width:100%;max-width:120px;aspect-ratio:1;display:block;margin-bottom:4px}
+.estagios b{font-size:13px;font-weight:600;line-height:1.15}
+.estagios span{font-size:11px;color:var(--ink3)}
 
 /* ajustes */
 .aj{padding:16px 0;border-top:1px solid var(--line)}
@@ -866,6 +871,8 @@ function telaEvolucao(){
         (U.armado===d?'<button class="ses-bt armado" data-a="excluir" data-v="'+d+'">Excluir?</button>':'<button class="ses-bt" data-a="excluir" data-v="'+d+'" aria-label="Excluir sessão de '+dm(d)+'">'+ICONES.lixo+'</button>')+'</li>'});
     h+='</ul></div>';
   }
+  h+='<h2 class="sec-t">Estágios do frango</h2><p class="sec-sub">Do mais fraco ao mais forte. Cada exercício tem o seu frango.</p><div class="estagios">'+
+    FASES.map((n,i)=>'<div>'+ave({cor:"#3a3935"},{fase:i})+'<b>'+n+'</b><span>Fase '+(i+1)+' de '+FASES.length+'</span></div>').join("")+'</div>';
   return h;
 }
 function telaAjustes(){
