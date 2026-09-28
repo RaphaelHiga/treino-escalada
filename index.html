@@ -640,6 +640,12 @@ const CENA_SOFA='<rect x="-50" y="14" width="100" height="34" rx="10" fill="#8a4
   cBraco("M-14 6 q-8 6 -6 14",-20,20)+cBraco("M15 6 q14 -2 18 -14",33,-8)+'<rect x="30" y="-24" width="7" height="16" rx="2.5" fill="#2B2B2B"/><circle cx="33.5" cy="-20" r="1.6" fill="#E84855"/>'+
   '<circle class="voa" cx="-30" cy="-30" r="3" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/><circle class="voa" style="animation-delay:.9s" cx="-40" cy="-16" r="2.6" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/>'+
   '<g transform="translate(0 4)">'+C_CABECA+C_SONO+C_BICO+C_BARBELA+'</g>';
+/* escalou sem fortalecer: hangboard esquecido com teia, frango assobiando de mãos no bolso */
+const CENA_SO_PAREDE='<g transform="translate(-58 -34) rotate(-8)"><rect x="-26" y="-9" width="52" height="18" rx="5" fill="#b07a4a" stroke="#2B2B2B" stroke-width="1.8"/><rect x="-20" y="-3" width="11" height="6" rx="2" fill="#6e4a2b"/><rect x="-5.5" y="-3" width="11" height="6" rx="2" fill="#6e4a2b"/><rect x="9" y="-3" width="11" height="6" rx="2" fill="#6e4a2b"/>'+
+  '<path d="M16 9 l10 14 M16 9 l2 18 M16 9 l-8 15 M4 14 q8 3 14 -2 M6 20 q9 4 17 -3" stroke="#d9d4ca" stroke-width="1" fill="none" opacity=".8"/><circle class="bob" cx="22" cy="24" r="2.4" fill="#2B2B2B"/></g>'+
+  C_PERNAS+C_CORPO+'<path d="M-15 8 q-6 12 -3 22" stroke="#2B2B2B" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M-15 8 q-6 12 -3 22" stroke="#F7F4EC" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M15 8 q6 12 3 22" stroke="#2B2B2B" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M15 8 q6 12 3 22" stroke="#F7F4EC" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M-22 32 q4 -4 8 0 M14 32 q4 -4 8 0" stroke="#2B2B2B" stroke-width="1.6" fill="none"/>'+
+  '<g class="olha">'+C_CABECA+C_FELIZ+'<path d="M-3 -32 q3 -4 6 0 q-1 5 -3 5 q-2 0 -3 -5z" fill="#FF8C1A" stroke="#2B2B2B" stroke-width="1.6"/><circle cx="0" cy="-26" r="1.8" fill="#2B2B2B"/>'+C_BARBELA+'</g>'+
+  '<text class="nota" x="18" y="-58" font-size="16" fill="#FFC83D" font-family="Archivo,sans-serif">♪</text><text class="nota" style="animation-delay:1.2s" x="30" y="-48" font-size="13" fill="#FFC83D" font-family="Archivo,sans-serif">♫</text>';
 function cena(arte,cor){return '<svg class="msc" viewBox="66 8 248 248" aria-hidden="true"><circle cx="190" cy="132" r="118" fill="'+cor+'"/><ellipse cx="190" cy="218" rx="50" ry="7" fill="#000" opacity=".35"/><g class="ave"><g transform="translate(190 144) scale(1.35)">'+arte+'</g></g></svg>'}
 
 const FERRUGEM='<g opacity=".85"><circle cx="182" cy="160" r="5" fill="#8a4a1f"/><circle cx="201" cy="172" r="4" fill="#8a4a1f"/><circle cx="191" cy="186" r="3" fill="#8a4a1f"/><circle cx="176" cy="92" r="4" fill="#8a4a1f"/><circle cx="207" cy="80" r="3" fill="#8a4a1f"/></g><path d="M92 58 L136 58 M92 58 L92 102 M92 58 L128 94 M100 58 q0 10 -8 12 M114 58 q-2 18 -22 22 M128 58 q-4 28 -36 34" stroke="#d9d4ca" stroke-width="1.6" fill="none" opacity=".75"/><text x="248" y="96" fill="#d9d4ca" font-family="Archivo,sans-serif" font-size="18" font-weight="700" transform="rotate(12 248 96)">nhéc</text>';
@@ -746,6 +752,7 @@ function salvarSessao(){
   if(s.escalada)U.fila.push({tipo:"escalada",min:s.escalada.min,int:s.escalada.int});
   else U.fila.push({tipo:"semescalada"});
   if(forta)U.fila.push({tipo:"esforco",nota:s.esforco});
+  else if(s.escalada)U.fila.push({tipo:"semforta"});
   if(s.dor){const m=Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]));U.fila.push({tipo:"dor",nivel:m})}
   else U.fila.push({tipo:"semdor"});
   U.fila=U.fila.concat(eventosSequencia(antes));
@@ -1159,6 +1166,7 @@ function celebracao(){
     txt=["Fortalecimento "+ev.nota+". Treino fofinho: recuperar também é treino.","Fortalecimento "+ev.nota+". Treino honesto, cumpriu o combinado.","Fortalecimento "+ev.nota+". Capricha no descanso e na comida hoje."][n];
     arte=cena(CENA_ESF[n],["#35507a","#2F5A4A","#6E4230"][n])}
   else if(ev.tipo==="semescalada"){tit="Folga da parede";txt="Não escalou "+(U.dia===hoje()?"hoje":"neste dia")+". Descansar também faz parte.";arte=cena(CENA_SOFA,"#463C6E")}
+  else if(ev.tipo==="semforta"){tit="Hangboard de folga";txt="Sem fortalecimento "+(U.dia===hoje()?"hoje":"neste dia")+". A parede deu conta do recado.";arte=cena(CENA_SO_PAREDE,"#2E4057")}
   else if(ev.tipo==="semdor"){tit="Dedos de aço";txt="Sem dor nos dedos. Segue o jogo.";arte=cena(CENA_ACO,"#2F5A4A")}
   else if(ev.tipo==="escalada"){const n=Math.max(0,ESC_INT.findIndex(x=>x[0]===ev.int)),t=ev.min<=60?0:ev.min<=120?1:2;
     tit=["Rapidinha","Sessão cheia","Morou no ginásio"][t];
