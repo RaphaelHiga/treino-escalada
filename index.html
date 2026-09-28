@@ -669,7 +669,7 @@ function faseDe(r,c){return r>=c[2]?3:r>=c[1]?2:r>=c[0]?1:0}
 function progressoFase(e){
   if(!D.pesos.length||!jaTestou(e))return {f:null,rel:null};
   const c=D.cortes[e.k],slots=slotsDe(e);
-  let f=null,melhor={},ant=null;
+  let f=null,melhor={},ant=null,fmax=0;
   const parada=g=>{const q=Math.floor(g/DIAS_ENF);if(q&&f!==null){f=Math.max(0,f-q);melhor={}}};
   datas().forEach(d=>{
     const s=D.sessoes[d];
@@ -677,11 +677,11 @@ function progressoFase(e){
     if(ant)parada(diasEntre(ant,d));ant=d;
     slots.forEach(sl=>{const n=nota(s,sl);if(n===null)return;const r=rel(e,n,d);if(r!==null&&(melhor[sl]===undefined||r>melhor[sl]))melhor[sl]=r});
     const vs=Object.keys(melhor).map(k=>melhor[k]);
-    if(vs.length){const fr=faseDe(vs.reduce((a,b)=>a+b,0)/vs.length,c);f=f===null?fr:Math.max(f,fr)}
+    if(vs.length){const fr=faseDe(vs.reduce((a,b)=>a+b,0)/vs.length,c);f=f===null?fr:Math.max(f,fr);fmax=Math.max(fmax,f)}
   });
   if(ant)parada(diasEntre(ant,hoje()));
   const vs=Object.keys(melhor).map(k=>melhor[k]);
-  return {f:f===null?0:f,rel:vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null};
+  return {f:f===null?0:f,rel:vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null,fmax:fmax};
 }
 function faseAtual(e){return progressoFase(e).f}
 function ultimoTreino(e){
@@ -1406,9 +1406,9 @@ function calcConquistas(){
   {let seg=0,top=0,ult=null;D.pesos.forEach(p=>{const w=semana(p.data);if(w===ult)return;seg=ult&&somaDias(ult,7)===w?seg+1:1;ult=w;top=Math.max(top,seg);if(seg>=4)ok("balanca",p.data)});pr("balanca",top,4)}
   if(D.pesos.length>=5)ok("dieta",D.pesos[4].data);
   if(D.ultimoBackup)ok("backup",D.ultimoBackup);
-  const vis=(D.vistos||[]).filter(k=>INFO[k]).length;if(vis>=5)ok("curioso",h);
-  const fases=EX.map(e=>faseAtual(e)||0),nMaq=fases.filter(f=>f===3).length;
-  if(nMaq)ok("maquina",h);if(nMaq===5)ok("maquinas",h);
+  const vis=(D.vistos||[]).filter(k=>INFO[k]).length;if(vis>=5)ok("curioso",D.conq&&D.conq.curioso||h);
+  const fases=EX.map(e=>progressoFase(e).fmax||0),nMaq=fases.filter(f=>f===3).length;
+  if(nMaq)ok("maquina",D.conq&&D.conq.maquina||h);if(nMaq===5)ok("maquinas",D.conq&&D.conq.maquinas||h);
   pr("seq7",best,7);pr("seq15",best,15);pr("seq30",best,30);pr("mes12",mesMax,12);
   [50,100,200].forEach(n=>pr("vet"+n,nt,n));pr("fds",fds,4);pr("perfeito",perf,5);pr("completo",Object.keys(feitoEx).length,5);
   pr("recorde10",rec,10);pr("maquina",Math.max.apply(null,fases),3);pr("maquinas",nMaq,5);
@@ -1416,12 +1416,17 @@ function calcConquistas(){
   pr("soesc",soEsc,5);pr("dieta",D.pesos.length,5);pr("curioso",vis,5);
   return R;
 }
-/* guarda as novas conquistas e põe na fila de comemoração.
+/* acompanha o histórico: conquista nova entra na fila de comemoração (uma vez por uso do app)
+   e, se o registro que a gerou for excluído, ela volta a ficar bloqueada.
    Na primeira vez (ou depois de importar um backup sem conquistas) guarda tudo sem comemorar. */
 function checarConquistas(){
   const R=calcConquistas(),primeira=!D.conq;let mudou=primeira;
   if(primeira)D.conq={};
-  CONQ.forEach(c=>{const r=R[c.k];if(!r||!r.data||D.conq[c.k])return;D.conq[c.k]=r.data;mudou=true;if(!primeira)U.fila.push({tipo:"conquista",id:c.k})});
+  CONQ.forEach(c=>{const r=R[c.k],d=r&&r.data,tinha=D.conq[c.k];
+    if(!d){if(tinha){delete D.conq[c.k];mudou=true}return}
+    if(tinha===d)return;
+    D.conq[c.k]=d;mudou=true;
+    if(!tinha&&!primeira&&!celebrados.has("conq:"+c.k)){celebrados.add("conq:"+c.k);U.fila.push({tipo:"conquista",id:c.k})}});
   if(mudou)gravar();
   return R;
 }
