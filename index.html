@@ -100,6 +100,9 @@ p{margin:0}
 .set.feito .tx{white-space:nowrap}
 .mao-tit{font:700 12px "Archivo",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:14px 0 6px}
 .ex-top+.mao-tit{margin-top:0}
+.set.feito.falhou{background:rgba(240,98,74,.14);color:var(--d3);box-shadow:inset 0 0 0 2px var(--d3)}
+.set.feito.falhou .tx small{color:var(--d3);opacity:.8}
+.set.feito.treme-f{animation:nega .38s ease-in-out}
 .set.feito.parcial{box-shadow:inset 0 0 0 1.5px var(--gema)}
 /* dia passado: cor de destaque azul e faixa listrada para não confundir com o registro do dia */
 .app.retro{--gema:#7EC8E3;--gema-ink:#062634}
@@ -766,13 +769,15 @@ function eventosSerie(slot){
 }
 
 /* ================= ações ================= */
-/* um toque marca as 3 séries com a carga atual; outro toque desfaz */
+/* um botão, três estados a cada toque: Feito? → Feito (3 séries com a carga atual) → Falha → Feito?
+   Falha: tentou e não completou. Conta como dia de treino, mas não entra em recorde, fase nem gráfico. */
 function marcarTodas(slot){
   const s=D.sessoes[U.dia],a=(s&&s.s[slot])||[];
-  const cheio=a.length===3&&a.every(x=>x&&x.ok);
+  const cheio=a.length===3&&a.every(x=>x&&x.ok),falhou=a.length===3&&a.every(x=>x&&!x.ok);
   const antesTinha=treinou(s),ss=sessao(D,U.dia,true);
   let virouOk=false;
-  if(cheio)delete ss.s[slot];
+  if(falhou)delete ss.s[slot];
+  else if(cheio)ss.s[slot]=a.map(x=>({c:x.c,ok:false,t:x.t}));
   else{const c=cargaAtual(slot),t=Date.now();ss.s[slot]=[0,1,2].map(()=>({c:c,ok:true,t:t}));D.carga[slot]=c;virouOk=true}
   if(!temSeries(ss)&&ss.esforco==null&&!ss.dor&&!ss.escalada)delete D.sessoes[U.dia];
   U.pop=slot+":all";
@@ -784,7 +789,7 @@ function marcarTodas(slot){
   let ev=virouOk?eventosSerie(slot):[];
   ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
   gravar();
-  if(navigator.vibrate)try{navigator.vibrate(virouOk?12:6)}catch(x){}
+  if(navigator.vibrate)try{navigator.vibrate(virouOk?12:cheio?[8,40,8]:6)}catch(x){}
   U.fila=U.fila.concat(ev);
   render();
 }
@@ -1008,7 +1013,7 @@ function telaTreino(){
       h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
   const modo=ehHoje?null:U.modo;   /* "peso" ou "sessao" quando veio de um + da Evolução */
   if(!ehHoje)h+='<div class="retro-faixa"><span><b>'+(modo==="peso"?"Peso de dia passado":modo==="sessao"?"Sessão de dia passado":"Registro de dia passado")+'</b>Tudo aqui vai para '+esc(dataTxt)+', não para hoje.</span></div>';
-  if(datas().length<4&&modo!=="peso")h+='<p class="dica">Ajuste a carga e toque em Feito quando terminar as 3 séries. Toque de novo para desfazer.</p>';
+  if(datas().length<4&&modo!=="peso")h+='<p class="dica">Ajuste a carga e toque no botão: 1 toque marca como feito, 2 toques como falha, 3 toques limpa.</p>';
   if(modo!=="sessao"){const pr=pesoRascunho(),pd=D.pesos.find(x=>x.data===U.dia),igual=pd&&r1(pd.kg)===r1(num(pr.v)||0);
     const atras=p?diasEntre(p.data,hoje()):null;
     const sub=pd?"Registrado neste dia":p?"Último: "+nf1.format(p.kg)+" kg em "+dm(p.data)+(ehHoje&&atras>7?", há "+atras+" dias":""):"Base para calcular a força relativa";
@@ -1037,13 +1042,13 @@ function telaTreino(){
         '<div class="stp"><button data-a="menos" data-s="'+sl+'" aria-label="Menos carga">−</button>'+
         '<input data-a="carga" data-s="'+sl+'" inputmode="decimal" value="'+nf1.format(c)+'" aria-label="Carga em kg'+(lado?", mão "+(lado==="Esq"?"esquerda":"direita"):"")+'"><span>kg</span>'+
         '<button data-a="mais" data-s="'+sl+'" aria-label="Mais carga">+</button></div><div class="sets">';
-      {const ok=a.filter(x=>x&&x.ok),cheio=ok.length===3,pop=U.pop===sl+":all"?" pop":"";
+      {const ok=a.filter(x=>x&&x.ok),cheio=ok.length===3,falhou=a.length===3&&a.every(x=>x&&!x.ok),pop=U.pop===sl+":all"?(falhou?" treme-f":" pop"):"";
         const n=ok.length,arco=n?'<path d="M12 2.5 A9.5 9.5 0 '+(n>1?1:0)+' 1 '+(12+9.5*Math.sin(n*2.0944)).toFixed(2)+' '+(12-9.5*Math.cos(n*2.0944)).toFixed(2)+'" fill="none" stroke="var(--gema)" stroke-width="2.5" stroke-linecap="round"/>':"";
-        const ic=cheio?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        const ic=falhou?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>':cheio?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
           :'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="var(--ink3)" stroke-width="1.8"/>'+(n&&!cheio?arco:"")+'</svg>';
-        const txt=ic+'<span class="tx">'+(cheio?'Feito<small>3 × '+esc(fmtCarga(e,ok[0].c))+'</small>':n?n+' de 3<small>completar</small>':'Marcar feito<small>3 séries</small>')+'</span>';
-        const lbl=(lado?(lado==="Esq"?"Mão esquerda: ":"Mão direita: "):"")+(cheio?"3 séries feitas com "+nf1.format(ok[0].c)+" kg. Toque para desfazer":"Marcar as 3 séries como feitas");
-        h+='<button class="set feito'+(cheio?" ok":n?" parcial":"")+pop+'" data-a="feito" data-s="'+sl+'" aria-pressed="'+cheio+'" aria-label="'+lbl+'">'+txt+'</button>';}
+        const txt=ic+'<span class="tx">'+(cheio?'Feito<small>3 × '+esc(fmtCarga(e,ok[0].c))+'</small>':falhou?'Falha<small>3 × '+esc(fmtCarga(e,a[0].c))+'</small>':n?n+' de 3<small>completar</small>':'Feito?<small>3 séries</small>')+'</span>';
+        const lbl=(lado?(lado==="Esq"?"Mão esquerda: ":"Mão direita: "):"")+(cheio?"Feito com "+nf1.format(ok[0].c)+" kg. Toque para marcar como falha":falhou?"Falha com "+nf1.format(a[0].c)+" kg. Toque para limpar":"Toque para marcar as 3 séries como feitas");
+        h+='<button class="set feito'+(cheio?" ok":falhou?" falhou":n?" parcial":"")+pop+'" data-a="feito" data-s="'+sl+'" aria-pressed="'+cheio+'" aria-label="'+lbl+'">'+txt+'</button>';}
       h+='</div></div>';
     });
     h+='</section>';
@@ -1275,7 +1280,7 @@ function folha(){
     const e=EX.find(x=>x.k===U.info),i=Object.assign({cuid:CUIDADOS[e.k]||""},INFO[e.k]);
     const lin=(t,x)=>'<li><b>'+t+'</b>'+esc(x)+'</li>';
     return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+e.nome+'</h2><p class="sub">'+e.proto+'</p><ul class="info-lista">'+
-      lin("Como fazer",i.faz)+lin("Séries",i.series)+lin("Descanso",DESCANSO)+lin("Carga",i.carga)+lin("Cuidados",i.cuid+" "+CUIDADO_GERAL)+
+      lin("Como fazer",i.faz)+lin("Séries",i.series)+lin("Descanso",DESCANSO)+lin("Carga",i.carga)+lin("Registro","Terminou as 3 séries com a carga marcada? Marque como feito. Não conseguiu completar, por qualquer motivo? Marque como falha.")+lin("Cuidados",i.cuid+" "+CUIDADO_GERAL)+
       '</ul><button class="btn" data-a="fundo-fechar">Entendi</button></div></div>';
   }
   if(U.folha==="importar"&&U.imp){
