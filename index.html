@@ -452,11 +452,26 @@ function melhorRel(e,desde){
 }
 function jaTestou(e){return datas().some(d=>slotsDe(e).some(sl=>nota(D.sessoes[d],sl)!==null))}
 function faseDe(r,c){return r>=c[2]?3:r>=c[1]?2:r>=c[0]?1:0}
-function faseAtual(e){
-  if(!D.pesos.length||!jaTestou(e))return null;
-  const r=melhorRel(e,somaDias(hoje(),-JANELA)).rel;
-  return r===null?0:faseDe(r,D.cortes[e.k]);
+/* fase: sobe quando a marca bate o corte e só cai com ferrugem. Cada DIAS_ENF dias parado
+   naquele exercício derruba uma fase, e as marcas de antes da parada deixam de contar. */
+function progressoFase(e){
+  if(!D.pesos.length||!jaTestou(e))return {f:null,rel:null};
+  const c=D.cortes[e.k],slots=slotsDe(e);
+  let f=null,melhor={},ant=null;
+  const parada=g=>{const q=Math.floor(g/DIAS_ENF);if(q&&f!==null){f=Math.max(0,f-q);melhor={}}};
+  datas().forEach(d=>{
+    const s=D.sessoes[d];
+    if(!slots.some(sl=>(s.s[sl]||[]).some(Boolean)))return;
+    if(ant)parada(diasEntre(ant,d));ant=d;
+    slots.forEach(sl=>{const n=nota(s,sl);if(n===null)return;const r=rel(e,n,d);if(r!==null&&(melhor[sl]===undefined||r>melhor[sl]))melhor[sl]=r});
+    const vs=Object.keys(melhor).map(k=>melhor[k]);
+    if(vs.length){const fr=faseDe(vs.reduce((a,b)=>a+b,0)/vs.length,c);f=f===null?fr:Math.max(f,fr)}
+  });
+  if(ant)parada(diasEntre(ant,hoje()));
+  const vs=Object.keys(melhor).map(k=>melhor[k]);
+  return {f:f===null?0:f,rel:vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null};
 }
+function faseAtual(e){return progressoFase(e).f}
 function ultimoTreino(e){
   const ds=datas().reverse();
   for(const d of ds){if(slotsDe(e).some(sl=>(D.sessoes[d].s[sl]||[]).some(Boolean)))return d}
@@ -524,7 +539,7 @@ function verificarFases(edicao){
     if(p===undefined||p===null){D.fases[e.k]=f;return}
     const chave="evo:"+hoje()+":"+e.k+":"+f;
     if(f>p){if(!edicao||!celebrados.has(chave))ev.push({tipo:"evoluiu",k:e.k,de:p,para:f});celebrados.add(chave)}
-    else if(f<p&&!edicao)ev.push({tipo:"regrediu",k:e.k,de:p,para:f});
+    else if(f<p&&!edicao&&enferrujado(e))ev.push({tipo:"regrediu",k:e.k,de:p,para:f});
     D.fases[e.k]=f;
   });
   return ev;
@@ -789,24 +804,24 @@ function telaEvolucao(){
   h+='</div>';
   const p=pesoAtual();
   EX.forEach(e=>{
-    const st=estadoAve(e),mr=melhorRel(e,somaDias(hoje(),-JANELA)),c=D.cortes[e.k];
+    const st=estadoAve(e),mr=melhorRel(e,somaDias(hoje(),-JANELA)),fp=progressoFase(e),c=D.cortes[e.k];
     h+='<section class="card" id="c-'+e.k+'"><div class="card-top"><div class="msc-g">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur})+'</div><div>'+
       '<h2>'+e.nome+'</h2><p class="fase">'+(st.fase===null?"Ainda sem teste completo":FASES[st.fase])+'</p>'+
       '<p class="num">'+(mr.rel!==null?pct(mr.rel)+'<small>do peso</small>':"—")+'</p>'+
       (e.maos&&mr.rel!==null?'<p class="maos">Esq '+(mr.por[e.k+"E"]!==null?pct(mr.por[e.k+"E"]):"—")+' &nbsp; Dir '+(mr.por[e.k+"D"]!==null?pct(mr.por[e.k+"D"]):"—")+'</p>':"")+
       '</div></div><div class="info">';
     slotsDe(e).forEach(sl=>{const b=melhorNota(sl);if(b!==null)h+='<span>Recorde'+(e.maos?(/E$/.test(sl)?" esquerda":" direita"):"")+': <b>'+fmtCarga(e,b)+'</b> nas 3 séries</span>'});
-    if(st.fase!==null&&mr.rel!==null){
+    if(st.fase!==null){
       if(st.fase<3){
         const alvo=c[st.fase],pk=pesoEm(hoje());
         const kgAlvo=e.lev?alvo/100*pk:alvo/100*pk-pk;
         h+='<span>Próxima fase: <b>'+FASES[st.fase+1]+'</b> em '+alvo+'% ('+fmtCarga(e,Math.ceil(kgAlvo*2)/2)+(e.maos?" por mão":"")+')</span>';
-        const ini=st.fase?c[st.fase-1]:Math.min(mr.rel,c[0])-10;
-        const pr=Math.max(0,Math.min(1,(mr.rel-ini)/(alvo-ini)));
+        const rr=fp.rel,ini=st.fase?c[st.fase-1]:Math.min(rr===null?c[0]:rr,c[0])-10;
+        const pr=rr===null?0:Math.max(0,Math.min(1,(rr-ini)/(alvo-ini)));
         h+='<div class="barra-f"><div style="width:'+Math.round(pr*100)+'%"></div></div>';
       }else h+='<span>Fase máxima. Agora é não deixar enferrujar.</span>';
     }
-    if(st.enf)h+='<span class="enf">Parado há '+diasEntre(ultimoTreino(e),hoje())+' dias: enferrujando.</span>';
+    if(st.enf)h+='<span class="enf">Parado há '+diasEntre(ultimoTreino(e),hoje())+' dias: enferrujado. Cada '+DIAS_ENF+' dias parado custa uma fase.</span>';
     h+='</div><div class="grafico">'+grafico(e)+'</div></section>';
   });
   h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma das notas de intensidade do fortalecimento. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
@@ -905,7 +920,7 @@ function celebracao(){
   if(ev.tipo==="recorde"){tit="Recorde!";txt=ev.texto;arte=ave(e,{fase:st.fase,cur:st.cur});cls="festa";extra=confete()}
   else if(ev.tipo==="forca"){tit="Mais forte";txt=ev.texto;arte=ave(e,{fase:st.fase,flex:true,cur:st.cur});cls="festa";extra='<span class="flutua">+'+nf1.format(ev.ganho)+'%</span>'}
   else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida no "+e.nome+": "+D.cortes[e.k][ev.para-1]+"% do peso. Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
-  else if(ev.tipo==="regrediu"){tit="Perdeu força";txt="Sem repetir a marca nos últimos "+JANELA+" dias, o "+e.nome.toLowerCase()+" voltou para "+FASES[ev.para]+". Um bom treino e ele volta.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
+  else if(ev.tipo==="regrediu"){const u=ultimoTreino(e);tit="Enferrujou";txt=(u?"Parado há "+diasEntre(u,hoje())+" dias no "+e.nome+", o frango":"O frango do "+e.nome)+" voltou para "+FASES[ev.para]+". Bata o corte de novo para ele subir.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit="Dedo dolorido";txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
