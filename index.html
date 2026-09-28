@@ -1209,7 +1209,7 @@ function telaEvolucao(){
     h+='</div><div class="grafico">'+grafico(e)+'</div></section>';
   });
   if(U.card)return h;
-  h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma das notas de intensidade do fortalecimento. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
+  h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma da intensidade do fortalecimento de cada semana. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
   h+=secaoPeso();
   const ds=datas().reverse();
   h+='<div class="sec-linha"><h2 class="sec-t">Sessões</h2><button class="add-bt" data-a="retro" aria-label="Registrar sessão de outro dia">+</button></div>'+(ds.length?'<p class="sec-sub">'+resumoSessoes(ds)+'</p>':'');
@@ -1277,7 +1277,7 @@ function folhaDia(d){
   if(s){
     const ex=EX.filter(e=>slotsDe(e).some(sl=>((s.s||{})[sl]||[]).some(Boolean))).map(e=>e.nome+": "+slotsDe(e).map(sl=>{const a=(s.s[sl]||[]).filter(Boolean),ok=a.filter(x=>x.ok),lado=e.maos?(/E$/.test(sl)?"esq ":"dir "):"";
       if(!a.length)return lado+"—";return lado+(ok.length===3?"feito, 3 × "+fmtCarga(e,ok[0].c):a.length===3&&!ok.length?"falha com "+fmtCarga(e,a[0].c):ok.length+" de 3")}).join(" · "));
-    if(ex.length)li.push(['Fortalecimento'+(temEsf(s)?' · nota '+s.esforco+' de 10':""),ex.join("\n")]);
+    if(ex.length)li.push(['Fortalecimento'+(temEsf(s)?' · intensidade '+s.esforco+' de 10':""),ex.join("\n")]);
     if(s.dor&&Object.keys(s.dor).length)li.push(["Dor",dorTexto(s.dor)]);
     else if(s.esforco!=null||s.escalada!=null)li.push(["Dor","Sem dor"]);
     if(s.escalada)li.push(["Escalada",fmtMin(s.escalada.min)+(s.escalada.min>=180?" ou mais":"")+", "+(ESC_INT.find(x=>x[0]===s.escalada.int)||ESC_INT[0])[1].toLowerCase()]);
