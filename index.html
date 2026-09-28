@@ -918,18 +918,23 @@ function folha(){
   if(U.folha==="sessao"){
     let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+(temSeries(D.sessoes[U.dia])?'Como foi o fortalecimento?</h2><p class="sub">Intensidade do treino específico: 1 é leve, 10 é muito intenso.</p><div class="esforco">':'Como foi o dia?</h2><p class="sub">Sem séries de fortalecimento '+(U.dia===hoje()?"hoje":"neste dia")+'.</p><div>');
     if(temSeries(D.sessoes[U.dia]))for(let i=1;i<=10;i++)h+='<button data-a="esf" data-v="'+i+'" aria-pressed="'+(U.esf===i)+'">'+i+'</button>';
-    h+='</div><div class="bloco"><h3>Dor nos dedos</h3><div class="dual"><button data-a="dor" data-v="0" aria-pressed="'+!U.dorSim+'">Sem dor</button><button data-a="dor" data-v="1" aria-pressed="'+U.dorSim+'">Tive dor</button></div>';
+    h+='</div>';
+    let dor='<div class="bloco"><h3>Dor nos dedos</h3><div class="dual"><button data-a="dor" data-v="0" aria-pressed="'+!U.dorSim+'">Sem dor</button><button data-a="dor" data-v="1" aria-pressed="'+U.dorSim+'">Tive dor</button></div>';
     if(U.dorSim){
-      h+='<div class="dual abas-mao">'+abaMao("esquerda","Mão esquerda")+abaMao("direita","Mão direita")+'</div><div class="mao-box">'+mapaMao(U.mao)+'</div>'+
+      dor+='<div class="dual abas-mao">'+abaMao("esquerda","Mão esquerda")+abaMao("direita","Mão direita")+'</div><div class="mao-box">'+mapaMao(U.mao)+'</div>'+
         '<div class="legenda"><span><i style="background:var(--d1)"></i>leve</span><span><i style="background:var(--d2)"></i>moderada</span><span><i style="background:var(--d3)"></i>aguda</span></div>'+
         '<p class="dor-txt">'+esc(textoDor())+'</p>';
     }
-    h+='</div><div class="bloco"><h3>'+(U.dia===hoje()?"Escalou hoje?":"Escalou neste dia?")+'</h3><div class="dual"><button data-a="esc" data-v="0" aria-pressed="'+(U.escSim===false)+'">Não</button><button data-a="esc" data-v="1" aria-pressed="'+(U.escSim===true)+'">Sim</button></div>';
+    dor+='</div>';
+    let escal='<div class="bloco"><h3>'+(U.dia===hoje()?"Escalou hoje?":"Escalou neste dia?")+'</h3><div class="dual"><button data-a="esc" data-v="0" aria-pressed="'+(U.escSim===false)+'">Não</button><button data-a="esc" data-v="1" aria-pressed="'+(U.escSim===true)+'">Sim</button></div>';
     if(U.escSim){
-      h+='<h4>Tempo de escalada</h4><div class="tempos">'+TEMPOS.map(m=>'<button data-a="esc-min" data-v="'+m+'" aria-pressed="'+(U.escMin===m)+'">'+(m===180?"3h+":fmtMin(m))+'</button>').join("")+'</div>';
-      h+='<h4>Intensidade</h4><div class="intens">'+ESC_INT.map(x=>'<button data-a="esc-int" data-v="'+x[0]+'" aria-pressed="'+(U.escInt===x[0])+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>').join("")+'</div>';
+      escal+='<h4>Tempo de escalada</h4><div class="tempos">'+TEMPOS.map(m=>'<button data-a="esc-min" data-v="'+m+'" aria-pressed="'+(U.escMin===m)+'">'+(m===180?"3h+":fmtMin(m))+'</button>').join("")+'</div>';
+      escal+='<h4>Intensidade</h4><div class="intens">'+ESC_INT.map(x=>'<button data-a="esc-int" data-v="'+x[0]+'" aria-pressed="'+(U.escInt===x[0])+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>').join("")+'</div>';
     }
-    h+='</div>'+(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
+    escal+='</div>';
+    /* sem fortalecimento ("Como foi o dia?") a escalada vem antes da dor */
+    h+=temSeries(D.sessoes[U.dia])?dor+escal:escal+dor;
+    h+=(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
     return h;
   }
   if(U.folha==="info"&&INFO[U.info]){
