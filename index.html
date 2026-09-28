@@ -166,6 +166,7 @@ p{margin:0}
 .ses-bt svg{width:19px;height:19px}
 .ses-bt.armado{background:var(--d3);color:#000;font-weight:700;font-size:13px;padding:0 10px}
 .lista time{color:var(--ink3);font-variant-numeric:tabular-nums}
+.fal{color:var(--d3)}
 .lista em{font-style:normal;color:var(--ink2)}
 .lista .esf{font-weight:600;font-variant-numeric:tabular-nums}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:1px}
@@ -183,6 +184,26 @@ button.pill{cursor:pointer}
 .seq-dias i{width:100%;max-width:38px;aspect-ratio:1;border-radius:10px;background:var(--s2);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:600;color:var(--ink3)}
 .seq-dias i.f{background:var(--gema);color:var(--gema-ink)}
 .seq-dias i.e{background:var(--ink2);color:#000}
+.seq-dias i{position:relative}
+.eng{width:44px;height:44px;border-radius:50%;background:var(--s1);display:grid;place-items:center;color:var(--ink2)}
+.eng svg{width:24px;height:24px}
+.mes-t{min-width:120px;text-align:center}
+.ag-sem,.ag-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.ag-sem{margin:14px 0 6px}.ag-sem span{text-align:center;font-size:12px;color:var(--ink3);font-weight:600}
+.ag-dia{position:relative;aspect-ratio:1;border-radius:12px;background:var(--s1);font-weight:700;font-size:15px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.ag-dia.f{background:var(--gema);color:var(--gema-ink)}
+.ag-dia.e{background:var(--ink2);color:#000}
+.ag-dia.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink3)}
+.ag-dia.x::after{content:"";position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
+.ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
+.ag-dia.fut{opacity:.3}
+.dia-cenas{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin:6px 0 4px}
+.dia-cena{display:grid;justify-items:center;align-content:start;gap:3px;text-align:center}
+.dia-cena .msc-g{width:100%;max-width:120px}.dia-cena .msc-g svg{width:100%;height:auto;display:block}
+.dia-cena b{font-family:var(--disp);font-weight:400;font-size:20px;color:var(--gema);line-height:1}
+.dia-cena span{font-size:11px;color:var(--ink3);line-height:1.3}
+.seq-dias i.x::after{content:"";position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--d3);box-shadow:0 0 0 1.5px var(--s1)}
+.seq-dias i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink3)}
 .seq-dias i.hoje{box-shadow:0 0 0 2px var(--ink)}
 .sec-sub{font-size:13px;color:var(--ink3);margin-bottom:8px}
 .estagios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
@@ -251,7 +272,7 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .mao-box{display:flex;justify-content:center;margin-top:10px}
 .mao-svg{display:block;width:100%;max-width:360px;height:auto;aspect-ratio:288/330;touch-action:manipulation;-webkit-tap-highlight-color:transparent;--paper:#2b2a26;--line:#55524b;--ink:#f3f0e9}
 .mao-svg [data-a]{cursor:pointer}
-.legenda{display:flex;gap:14px;justify-content:center;margin-top:12px;font-size:12px;color:var(--ink2)}
+.legenda{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:12px;font-size:12px;color:var(--ink2)}
 .legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .dor-txt{font-size:13px;color:var(--ink2);margin-top:10px;text-align:center;min-height:1.2em}
 .folha .btn{margin-top:22px}
@@ -625,11 +646,16 @@ function dorRecente(){
 /* dia de treino: fortalecimento ou escalada */
 const treinou=s=>temSeries(s)||!!(s&&s.escalada);
 const MARCOS_SEQ=[3,7,14,21,30,50,75,100,150,200,365];
+/* dias seguidos com treino. Hoje sem registro ainda não quebra (o dia não acabou);
+   hoje registrado como descanso quebra na hora. */
 function sequencia(){
-  let d=hoje();if(!treinou(D.sessoes[d]))d=somaDias(d,-1);
+  let d=hoje();if(!treinou(D.sessoes[d])){if(D.sessoes[d]&&D.sessoes[d].descanso)return 0;d=somaDias(d,-1)}
   let n=0;while(treinou(D.sessoes[d])){n++;d=somaDias(d,-1)}
   return n;
 }
+/* descanso: a partir do primeiro registro, dia que já passou sem treino (com ou sem registro)
+   ou hoje registrado como descanso */
+const descansou=d=>{const p=datas()[0];return !!p&&d>=p&&!treinou(D.sessoes[d])&&(d<hoje()||!!(D.sessoes[d]&&D.sessoes[d].descanso))};
 function melhorSequencia(){
   let m=0,n=0,ant=null;
   datas().forEach(d=>{if(!treinou(D.sessoes[d]))return;n=ant&&somaDias(ant,1)===d?n+1:1;ant=d;if(n>m)m=n});
@@ -713,6 +739,13 @@ const CENA_SO_PAREDE='<g transform="translate(-58 -34) rotate(-8)"><rect x="-26"
   C_PERNAS+C_CORPO+'<path d="M-15 8 q-6 12 -3 22" stroke="#2B2B2B" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M-15 8 q-6 12 -3 22" stroke="#F7F4EC" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M15 8 q6 12 3 22" stroke="#2B2B2B" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M15 8 q6 12 3 22" stroke="#F7F4EC" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M-22 32 q4 -4 8 0 M14 32 q4 -4 8 0" stroke="#2B2B2B" stroke-width="1.6" fill="none"/>'+
   '<g class="olha">'+C_CABECA+C_FELIZ+'<path d="M-3 -32 q3 -4 6 0 q-1 5 -3 5 q-2 0 -3 -5z" fill="#FF8C1A" stroke="#2B2B2B" stroke-width="1.6"/><circle cx="0" cy="-26" r="1.8" fill="#2B2B2B"/>'+C_BARBELA+'</g>'+
   '<text class="nota" x="18" y="-58" font-size="16" fill="#FFC83D" font-family="Archivo,sans-serif">♪</text><text class="nota" style="animation-delay:1.2s" x="30" y="-48" font-size="13" fill="#FFC83D" font-family="Archivo,sans-serif">♫</text>';
+/* dia de descanso: frango dormindo na rede */
+const CENA_REDE='<path d="M-52 -34 V50 M52 -34 V50" stroke="#8a6a4a" stroke-width="5" stroke-linecap="round"/><path d="M-52 -26 L-44 -12 M52 -26 L44 -12" stroke="#d9d4ca" stroke-width="1.6"/>'+
+  '<path d="M30 2 l12 -8 M31 7 l14 -3" stroke="#FF8C1A" stroke-width="3.4" stroke-linecap="round"/>'+
+  '<g class="respira"><ellipse cx="4" cy="9" rx="28" ry="13" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="2"/></g>'+
+  '<g transform="rotate(-14 -28 -6)"><g transform="translate(-28 16) scale(.55)">'+C_CABECA+C_SONO+C_BICO+C_BARBELA+'</g></g>'+
+  '<path d="M-46 -12 Q0 40 46 -12 L46 -6 Q0 54 -46 -6z" fill="#3BB273" stroke="#2B2B2B" stroke-width="2" stroke-linejoin="round"/><path d="M-36 2 Q0 36 36 2 M-40 8 Q0 44 40 8" stroke="#2c8a57" stroke-width="1.4" fill="none"/>'+
+  cZ(-18,-36,11,0)+cZ(-8,-48,14,.8)+cZ(4,-62,17,1.6);
 function cena(arte,cor){return '<svg class="msc" viewBox="66 8 248 248" aria-hidden="true"><circle cx="190" cy="132" r="118" fill="'+cor+'"/><ellipse cx="190" cy="218" rx="50" ry="7" fill="#000" opacity=".35"/><g class="ave"><g transform="translate(190 144) scale(1.35)">'+arte+'</g></g></svg>'}
 
 const FERRUGEM='<g opacity=".85"><circle cx="182" cy="160" r="5" fill="#8a4a1f"/><circle cx="201" cy="172" r="4" fill="#8a4a1f"/><circle cx="191" cy="186" r="3" fill="#8a4a1f"/><circle cx="176" cy="92" r="4" fill="#8a4a1f"/><circle cx="207" cy="80" r="3" fill="#8a4a1f"/></g><path d="M92 58 L136 58 M92 58 L92 102 M92 58 L128 94 M100 58 q0 10 -8 12 M114 58 q-2 18 -22 22 M128 58 q-4 28 -36 34" stroke="#d9d4ca" stroke-width="1.6" fill="none" opacity=".75"/><text x="248" y="96" fill="#d9d4ca" font-family="Archivo,sans-serif" font-size="18" font-weight="700" transform="rotate(12 248 96)">nhéc</text>';
@@ -834,20 +867,22 @@ function salvarSessao(){
   if(U.escSim==null){U.erro="Diga se você escalou.";return render()}
   if(U.escSim&&!U.escMin){U.erro="Escolha quanto tempo você escalou.";return render()}
   if(U.escSim&&!U.escInt){U.erro="Escolha a intensidade da escalada.";return render()}
-  if(!forta&&!U.escSim&&!U.dorSim){U.erro="Nada para salvar: sem séries, sem escalada e sem dor.";return render()}
   const antes=treinou(D.sessoes[U.dia]);
   const s=sessao(D,U.dia,true);
   s.esforco=forta?U.esf:null;s.dor=U.dorSim?Object.assign({},U.dorP):null;
   s.escalada=U.escSim?{min:U.escMin,int:U.escInt}:false;
+  /* sem fortalecimento, sem escalada e sem dor: fica registrado como dia de descanso */
+  const descanso=!forta&&!U.escSim&&!U.dorSim;if(descanso)s.descanso=true;else delete s.descanso;
   gravar();U.folha=null;
   /* mesma ordem das perguntas da janela: com fortalecimento é nota, dor, escalada;
      sem fortalecimento ("Como foi o dia?") é escalada, dor */
   const escal=s.escalada?{tipo:"escalada",min:s.escalada.min,int:s.escalada.int}:{tipo:"semescalada"};
   const dorEv=s.dor?{tipo:"dor",nivel:Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]))}:{tipo:"semdor"};
-  if(forta)U.fila.push({tipo:"esforco",nota:s.esforco},dorEv,escal);
+  if(descanso)U.fila.push({tipo:"descanso"});
+  else if(forta)U.fila.push({tipo:"esforco",nota:s.esforco},dorEv,escal);
   else U.fila.push.apply(U.fila,(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv]));
   U.fila=U.fila.concat(eventosSequencia(antes));
-  toast("Sessão salva");render();
+  toast(descanso?"Descanso registrado":"Sessão salva");render();
 }
 let tArm;
 function excluirSessao(d){
@@ -966,7 +1001,7 @@ document.addEventListener("focusin",ev=>{
 });
 document.addEventListener("mouseup",ev=>{if(ev.target.matches&&ev.target.matches("input[data-a=carga],input[data-a=peso-val],input[data-a=corte]")&&ev.target.selectionStart===ev.target.selectionEnd)ev.preventDefault()},true);
 /* deslizar o dedo para o lado troca de aba */
-const ABAS=["evolucao","treino","ajustes"];
+const ABAS=["evolucao","treino","agenda"];
 let toque=null;
 document.addEventListener("touchstart",ev=>{
   const t=ev.touches[0];
@@ -976,6 +1011,7 @@ document.addEventListener("touchstart",ev=>{
 document.addEventListener("touchend",ev=>{
   if(!toque)return;const t=ev.changedTouches[0],dx=t.clientX-toque.x,dy=t.clientY-toque.y,dt_=Date.now()-toque.t;toque=null;
   if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt_>700)return;
+  if(ABAS.indexOf(U.tela)<0)return;
   const i=ABAS.indexOf(U.tela)+(dx<0?1:-1);if(i<0||i>=ABAS.length)return;
   U.tela=ABAS[i];U.folha=null;U.card=null;U.modo=null;if(U.tela==="treino")U.dia=hoje();render();
 },{passive:true});
@@ -1058,8 +1094,9 @@ function telaTreino(){
     const dor=s.dor&&Object.keys(s.dor).length?"dor "+INTENS[Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]))-1]:"sem dor";
     const pt=[];if(temEsf(s))pt.push('Fortalecimento <b>'+s.esforco+' de 10</b>');pt.push(dor);
     pt.push(s.escalada?'escalou <b>'+fmtMin(s.escalada.min)+'</b> '+(s.escalada.int==="moderada"?"moderado":s.escalada.int==="intensa"?"intenso":"leve"):"não escalou");
+    if(s.descanso)pt.splice(0,pt.length,'<b>Dia de descanso</b>');
     h+='<div class="resumo-sess"><span>'+pt.join(", ")+'</span><button data-a="sessao">Editar</button></div>';
-  }else h+='<button class="btn" data-a="sessao">'+(temSeries(s)?"Registrar fortalecimento, dor e escalada":"Registrar escalada")+'</button>';
+  }else h+='<button class="btn" data-a="sessao">'+(temSeries(s)?"Registrar fortalecimento, dor e escalada":"Registrar escalada ou descanso")+'</button>';
   h+='</div>';
   U.pop=null;
   return h;
@@ -1136,8 +1173,14 @@ function secaoPeso(){
       (U.armado===k?'<button class="ses-bt armado" data-a="excluir-peso" data-v="'+x.data+'">Excluir?</button>':'<button class="ses-bt" data-a="excluir-peso" data-v="'+x.data+'" aria-label="Excluir peso de '+dm(x.data)+'">'+ICONES.lixo+'</button>')+'</li>'});
   return h+'</ul></div>';
 }
+/* falha: as 3 séries registradas e nenhuma completa (em alguma mão) */
+const falhouEx=(s,e)=>!!s&&slotsDe(e).some(sl=>{const a=(s.s||{})[sl]||[];return a.length===3&&a.every(x=>x&&!x.ok)});
+function resumoSessoes(ds){
+  const n=ds.length,nf=ds.reduce((t,d)=>t+EX.filter(e=>falhouEx(D.sessoes[d],e)).length,0),nd=ds.filter(d=>D.sessoes[d].descanso).length;
+  return n+(n>1?" sessões":" sessão")+(nf?' · <span class="fal">'+nf+(nf>1?" falhas":" falha")+'</span>':"")+(nd?" · "+nd+(nd>1?" descansos":" descanso"):"");
+}
 function telaEvolucao(){
-  let h='<header class="topo"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div></header>';
+  let h='<header class="topo"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div><div class="pills"><button class="eng" data-a="tela" data-v="ajustes" aria-label="Ajustes">'+ICONES.ajustes+'</button></div></header>';
   h+=U.card?'<button class="voltar" data-a="card" data-v="">‹ Todos os exercícios</button>':'<div class="gal">';
   if(!U.card)EX.forEach(e=>{const st=estadoAve(e);
     h+='<button data-a="card" data-v="'+e.k+'">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur})+'<b>'+e.curto+'</b>'+(()=>{const r=melhorRel(e,somaDias(hoje(),-JANELA)).rel;return r!==null?'<i class="gal-p">'+pct(r)+'</i>':""})()+'<span>'+(st.fase===null?"Sem teste":FASES_CURTO[st.fase])+'</span></button>'});
@@ -1169,15 +1212,16 @@ function telaEvolucao(){
   h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma das notas de intensidade do fortalecimento. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
   h+=secaoPeso();
   const ds=datas().reverse();
-  h+='<div class="sec-linha"><h2 class="sec-t">Sessões</h2><button class="add-bt" data-a="retro" aria-label="Registrar sessão de outro dia">+</button></div>'+(ds.length?'<p class="sec-sub">'+ds.length+(ds.length>1?' sessões':' sessão')+'</p>':'');
+  h+='<div class="sec-linha"><h2 class="sec-t">Sessões</h2><button class="add-bt" data-a="retro" aria-label="Registrar sessão de outro dia">+</button></div>'+(ds.length?'<p class="sec-sub">'+resumoSessoes(ds)+'</p>':'');
   if(!ds.length)h+='<p class="vazio">Nenhuma sessão ainda.</p>';
   else{
     h+='<div class="rolagem-y"><ul class="lista">';
     ds.forEach(d=>{const s=D.sessoes[d],partes=[];
-      EX.forEach(e=>{if(slotsDe(e).some(sl=>(s.s[sl]||[]).some(Boolean)))partes.push(e.curto)});
+      EX.forEach(e=>{if(!slotsDe(e).some(sl=>(s.s[sl]||[]).some(Boolean)))return;
+        partes.push(falhouEx(s,e)?'<span class="fal">'+e.curto+' ✕</span>':e.curto)});
       if(s.escalada)partes.push("Escalada "+fmtMin(s.escalada.min));
       const dor=s.dor&&Object.keys(s.dor).length?Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k])):0;
-      h+='<li><button class="ses-info" data-a="abrir" data-v="'+d+'"><time>'+dm(d)+'</time><em>'+(partes.join(", ")||"Sem séries")+'</em><span class="esf">'+(temEsf(s)?s.esforco+"/10":"")+(dor?'<span class="dot" style="background:var(--d'+dor+')"></span>':"")+'</span></button>'+
+      h+='<li><button class="ses-info" data-a="abrir" data-v="'+d+'"><time>'+dm(d)+'</time><em>'+(partes.join(", ")||(s.descanso?"Descanso":"Sem séries"))+'</em><span class="esf">'+(temEsf(s)?s.esforco+"/10":"")+(dor?'<span class="dot" style="background:var(--d'+dor+')"></span>':"")+'</span></button>'+
         '<button class="ses-bt" data-a="abrir" data-v="'+d+'" aria-label="Editar sessão de '+dm(d)+'">'+ICONES.editar+'</button>'+
         (U.armado===d?'<button class="ses-bt armado" data-a="excluir" data-v="'+d+'">Excluir?</button>':'<button class="ses-bt" data-a="excluir" data-v="'+d+'" aria-label="Excluir sessão de '+dm(d)+'">'+ICONES.lixo+'</button>')+'</li>'});
     h+='</ul></div>';
@@ -1186,9 +1230,67 @@ function telaEvolucao(){
     FASES.map((n,i)=>'<div>'+ave({cor:"#3a3935"},{fase:i})+'<b>'+n+'</b><span>Fase '+(i+1)+' de '+FASES.length+'</span></div>').join("")+'</div>';
   return h;
 }
+/* ================= agenda ================= */
+const MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const falhasDoDia=s=>s?EX.filter(e=>falhouEx(s,e)):[];
+function classeDia(d){
+  const s=D.sessoes[d];
+  return (temSeries(s)?"f":(s&&s.escalada)?"e":descansou(d)?"d":"")+(falhasDoDia(s).length?" x":"")+(d===hoje()?" hoje":"")+(d>hoje()?" fut":"");
+}
+function telaAgenda(){
+  const mes=U.mes||hoje().slice(0,7),[a,m]=mes.split("-").map(Number),ini=mes+"-01";
+  const nDias=new Date(a,m,0).getDate(),vazio=dt(ini).getDay(),atual=mes===hoje().slice(0,7);
+  let h='<header class="topo"><div><h1>Agenda</h1><div class="dia"><button data-a="mes" data-v="-1" aria-label="Mês anterior">‹</button><span class="mes-t">'+MESES[m-1].charAt(0).toUpperCase()+MESES[m-1].slice(1)+' de '+a+'</span>'+
+    '<button data-a="mes" data-v="1" aria-label="Próximo mês"'+(atual?" disabled":"")+'>›</button>'+(atual?"":'<button class="hoje" data-a="mes" data-v="0">Mês atual</button>')+'</div></div></header>';
+  let tr=0,de=0,fa=0,grade='<div class="ag-sem">'+"DSTQQSS".split("").map(x=>'<span>'+x+'</span>').join("")+'</div><div class="ag-grade">';
+  for(let k=0;k<vazio;k++)grade+='<span></span>';
+  for(let n=1;n<=nDias;n++){const d=mes+"-"+pad(n),s=D.sessoes[d];
+    if(treinou(s))tr++;else if(descansou(d))de++;fa+=falhasDoDia(s).length;
+    grade+='<button class="ag-dia '+classeDia(d)+'" data-a="diaag" data-v="'+d+'"'+(d>hoje()?" disabled":"")+' aria-label="'+n+' de '+MESES[m-1]+'">'+n+'</button>'}
+  grade+='</div>';
+  h+='<p class="sec-sub">'+tr+(tr===1?" dia":" dias")+' com treino · '+de+' de descanso'+(fa?' · <span class="fal">'+fa+(fa===1?" falha":" falhas")+'</span>':"")+'</p>'+grade+
+    '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--ink3)"></i>descanso</span></div>'+
+    '<p class="dica" style="margin-top:14px;text-align:center">Toque num dia para ver tudo o que foi registrado.</p>';
+  return h;
+}
+/* eventos de um dia, na mesma ordem das perguntas do registro */
+function eventosDoDia(d){
+  const s=D.sessoes[d],ev=[];
+  if(!s)return d<hoje()?[{tipo:"descanso",dia:d}]:[];
+  if(s.descanso)return [{tipo:"descanso",dia:d}];
+  const forta=temSeries(s),sessao=s.esforco!=null||s.escalada!=null||!!s.dor;
+  if(!sessao)return [];
+  const escal=s.escalada?{tipo:"escalada",min:s.escalada.min,int:s.escalada.int,dia:d}:{tipo:"semescalada",dia:d};
+  const dorEv=s.dor&&Object.keys(s.dor).length?{tipo:"dor",nivel:Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k])),dia:d}:{tipo:"semdor",dia:d};
+  if(forta&&temEsf(s))ev.push({tipo:"esforco",nota:s.esforco,dia:d},dorEv,escal);
+  else{if(s.escalada)ev.push({tipo:"semforta",dia:d});ev.push(escal,dorEv)}
+  return ev;
+}
+const dorTexto=o=>Object.keys(o).map(k=>{const q=k.split(":");return (q[0]==="esquerda"?"Esq ":"Dir ")+q[1].toLowerCase()+" "+(/^[A-Z]{2,3}$/.test(q[2])?q[2]:q[2].toLowerCase())+" ("+INTENS[o[k]-1]+")"}).join(", ");
+function folhaDia(d){
+  const s=D.sessoes[d],ev=eventosDoDia(d),pd=D.pesos.find(p=>p.data===d);
+  const tit=dt(d).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+esc(tit.charAt(0).toUpperCase()+tit.slice(1))+'</h2>'+
+    '<p class="sub">'+(!s?(d<hoje()?"Sem registro: conta como dia de descanso.":"Nada registrado ainda."):s.descanso?"Registrado como dia de descanso.":treinou(s)?"Dia de treino.":"Registro sem treino.")+'</p>';
+  if(ev.length)h+='<div class="dia-cenas">'+ev.map(x=>{const c=dadosCena(x);return '<div class="dia-cena"><div class="msc-g">'+c.arte+'</div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div>'}).join("")+'</div>';
+  const li=[];
+  if(s){
+    const ex=EX.filter(e=>slotsDe(e).some(sl=>((s.s||{})[sl]||[]).some(Boolean))).map(e=>e.nome+": "+slotsDe(e).map(sl=>{const a=(s.s[sl]||[]).filter(Boolean),ok=a.filter(x=>x.ok),lado=e.maos?(/E$/.test(sl)?"esq ":"dir "):"";
+      if(!a.length)return lado+"—";return lado+(ok.length===3?"feito, 3 × "+fmtCarga(e,ok[0].c):a.length===3&&!ok.length?"falha com "+fmtCarga(e,a[0].c):ok.length+" de 3")}).join(" · "));
+    if(ex.length)li.push(['Fortalecimento'+(temEsf(s)?' · nota '+s.esforco+' de 10':""),ex.join("\n")]);
+    if(s.dor&&Object.keys(s.dor).length)li.push(["Dor",dorTexto(s.dor)]);
+    else if(s.esforco!=null||s.escalada!=null)li.push(["Dor","Sem dor"]);
+    if(s.escalada)li.push(["Escalada",fmtMin(s.escalada.min)+(s.escalada.min>=180?" ou mais":"")+", "+(ESC_INT.find(x=>x[0]===s.escalada.int)||ESC_INT[0])[1].toLowerCase()]);
+    else if(s.escalada===false)li.push(["Escalada","Não escalou"]);
+  }
+  if(pd)li.push(["Peso corporal",nf1.format(pd.kg)+" kg"]);
+  if(li.length)h+='<ul class="info-lista">'+li.map(x=>'<li><b>'+x[0]+'</b>'+esc(x[1]).replace(/\n/g,"<br>")+'</li>').join("")+'</ul>';
+  h+='<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Fechar</button><button class="btn" data-a="abrir" data-v="'+d+'">'+(s?"Editar este dia":"Registrar este dia")+'</button></div></div></div>';
+  return h;
+}
 function telaAjustes(){
   const p=pesoAtual();
-  let h='<header class="topo"><div><h1>Ajustes</h1></div></header>';
+  let h='<button class="voltar" data-a="tela" data-v="evolucao">‹ Evolução</button><header class="topo"><div><h1>Ajustes</h1></div></header>';
   h+='<section class="aj"><h2>Cortes das fases</h2><p>Em % do peso corporal. Nos exercícios pendurados conta peso + carga; nos de levantar do chão, só a carga.</p>'+
     '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Frangão</th><th>Máquina</th></tr></thead><tbody>';
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
@@ -1256,19 +1358,24 @@ function folha(){
   }
   if(U.folha==="seq"){
     const n=sequencia(),hojeFeito=treinou(D.sessoes[hoje()]),melhor=melhorSequencia(),prox=MARCOS_SEQ.find(m=>m>n);
-    let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k),s=D.sessoes[d],c=temSeries(s)?"f":(s&&s.escalada)?"e":"";
-      dias+='<div><i class="'+c+(k?"":" hoje")+'">'+Number(d.slice(8))+'</i>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
-    const mes=datas().filter(d=>d>somaDias(hoje(),-30)&&treinou(D.sessoes[d])).length;
+    const falhouEm=s=>s?EX.filter(e=>slotsDe(e).some(sl=>{const a=(s.s||{})[sl]||[];return a.length===3&&a.every(x=>x&&!x.ok)})):[];
+    let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k),s=D.sessoes[d],c=temSeries(s)?"f":(s&&s.escalada)?"e":descansou(d)?"d":"";
+      dias+='<div><i class="'+c+(falhouEm(s).length?" x":"")+(k?"":" hoje")+'">'+Number(d.slice(8))+'</i>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
+    let mes=0,desc=0;for(let k=0;k<30;k++){const d=somaDias(hoje(),-k);if(treinou(D.sessoes[d]))mes++;else if(descansou(d))desc++}
+    const hojeDesc=!hojeFeito&&D.sessoes[hoje()]&&D.sessoes[hoje()].descanso;
+    const fal={};let nFal=0,ultFal=null;datas().forEach(d=>{if(d<=somaDias(hoje(),-30))return;falhouEm(D.sessoes[d]).forEach(e=>{fal[e.nome]=(fal[e.nome]||0)+1;nFal++;ultFal=d})});
+    const txtFal=nFal?nFal+(nFal===1?" falha":" falhas")+": "+Object.keys(fal).map(n=>n+" "+fal[n]).join(" · ")+". Última em "+dm(ultFal)+".":"Nenhuma. Tudo completo!";
     return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Sequência</h2>'+
       '<div class="seq-top">'+CHAMA+'<b>'+n+'</b><span>'+(n===1?"dia seguido":"dias seguidos")+'<br>com treino</span></div>'+
-      '<p class="sub">'+(hojeFeito?"Hoje já conta. Volte amanhã para manter o fogo aceso.":"Hoje ainda não conta. Registre um treino ou uma escalada para a sequência continuar.")+'</p>'+
+      '<p class="sub">'+(hojeFeito?"Hoje já conta. Volte amanhã para manter o fogo aceso.":hojeDesc?"Hoje é dia de descanso. A sequência volta a contar no próximo treino.":"Hoje ainda não conta. Registre um treino ou uma escalada para a sequência continuar.")+'</p>'+
       '<ul class="info-lista">'+
       '<li><b>Melhor sequência</b>'+melhor+(melhor===1?" dia":" dias")+(melhor&&melhor===n?" (é a atual!)":"")+'</li>'+
       (prox?'<li><b>Próxima comemoração</b>'+prox+' dias. Faltam '+(prox-n)+(prox-n===1?" dia":" dias")+'.</li>':"")+
-      '<li><b>Últimos 30 dias</b>'+mes+(mes===1?" dia":" dias")+' com treino</li>'+
-      '<li><b>O que conta</b>Qualquer dia com fortalecimento ou escalada registrado.</li></ul>'+
+      '<li><b>Últimos 30 dias</b>'+mes+(mes===1?" dia":" dias")+' com treino · '+desc+(desc===1?" de descanso":" de descanso")+'</li>'+
+      '<li><b>Falhas nos últimos 30 dias</b>'+esc(txtFal)+'</li>'+
+      '<li><b>O que conta</b>Qualquer dia com fortalecimento (feito ou falha) ou escalada. Dia sem registro, ou registrado só com dor ou como descanso, é descanso e interrompe a sequência.</li></ul>'+
       '<h3 class="sec-t" style="font-size:22px;margin:18px 0 2px">Últimos 14 dias</h3><div class="seq-dias">'+dias+'</div>'+
-      '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span></div>'+
+      '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--ink3)"></i>descanso</span></div>'+
       '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
   }
   if(U.folha==="sair"){
@@ -1276,6 +1383,7 @@ function folha(){
       '<p class="sub">Você está na primeira tela. Toque em voltar de novo ou em Sair para fechar o app.</p>'+
       '<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Ficar</button><button class="btn" data-a="sair-ok">Sair</button></div></div></div>';
   }
+  if(U.folha==="dia"&&U.diaAg)return folhaDia(U.diaAg);
   if(U.folha==="info"&&INFO[U.info]){
     const e=EX.find(x=>x.k===U.info),i=Object.assign({cuid:CUIDADOS[e.k]||""},INFO[e.k]);
     const lin=(t,x)=>'<li><b>'+t+'</b>'+esc(x)+'</li>';
@@ -1297,8 +1405,9 @@ function confete(){
   for(let i=0;i<34;i++)h+='<i class="confete" style="left:'+(Math.random()*100)+'%;background:'+cores[i%cores.length]+';animation-duration:'+(1.6+Math.random()*1.6)+'s;animation-delay:'+(Math.random()*.5)+'s"></i>';
   return h;
 }
-function celebracao(){
-  const ev=U.fila[0];if(!ev)return "";
+/* título, texto e desenho de cada evento (usado nas comemorações e na tela do dia da Agenda) */
+function dadosCena(ev){
+  const dAlvo=ev.dia||U.dia;
   const e=ev.k?EX.find(x=>x.k===ev.k):EX[0],st=estadoAve(e);
   let arte="",tit="",txt="",extra="",cls="";
   if(ev.tipo==="recorde"){tit="Recorde!";txt=ev.texto;arte=ave(e,{fase:st.fase,cur:st.cur});cls="festa";extra=confete()}
@@ -1312,13 +1421,19 @@ function celebracao(){
     tit=["Treino fofo","Treino normal","Espanco!"][n];
     txt=["Fortalecimento "+ev.nota+". Treino fofinho: recuperar também é treino.","Fortalecimento "+ev.nota+". Treino honesto, cumpriu o combinado.","Fortalecimento "+ev.nota+". Capricha no descanso e na comida hoje."][n];
     arte=cena(CENA_ESF[n],["#35507a","#2F5A4A","#6E4230"][n])}
-  else if(ev.tipo==="semescalada"){tit="Folga da parede";txt="Não escalou "+(U.dia===hoje()?"hoje":"neste dia")+". Descansar também faz parte.";arte=cena(CENA_SOFA,"#463C6E")}
-  else if(ev.tipo==="semforta"){tit="Hangboard de folga";txt="Sem fortalecimento "+(U.dia===hoje()?"hoje":"neste dia")+". A parede deu conta do recado.";arte=cena(CENA_SO_PAREDE,"#2E4057")}
+  else if(ev.tipo==="semescalada"){tit="Folga da parede";txt="Não escalou "+(dAlvo===hoje()?"hoje":"neste dia")+". Descansar também faz parte.";arte=cena(CENA_SOFA,"#463C6E")}
+  else if(ev.tipo==="semforta"){tit="Hangboard de folga";txt="Sem fortalecimento "+(dAlvo===hoje()?"hoje":"neste dia")+". A parede deu conta do recado.";arte=cena(CENA_SO_PAREDE,"#2E4057")}
+  else if(ev.tipo==="descanso"){tit="Dia de descanso";txt="Nada de fortalecimento, escalada ou dor "+(dAlvo===hoje()?"hoje":"neste dia")+". Descansar também faz o frango crescer.";arte=cena(CENA_REDE,"#35507a")}
   else if(ev.tipo==="semdor"){tit="Dedos de aço";txt="Sem dor nos dedos. Segue o jogo.";arte=cena(CENA_ACO,"#2F5A4A")}
   else if(ev.tipo==="escalada"){const n=Math.max(0,ESC_INT.findIndex(x=>x[0]===ev.int)),t=ev.min<=60?0:ev.min<=120?1:2;
     tit=["Rapidinha","Sessão cheia","Morou no ginásio"][t];
     txt=fmtMin(ev.min)+(ev.min>=180?" ou mais":"")+" de escalada. "+ESC_INT[n][2]+".";
     arte=cena(CENA_TEMPO[t]+INT_DET[n],["#35507a","#2F5A4A","#6E4230"][t])}
+  return {arte:arte,tit:tit,txt:txt,extra:extra,cls:cls};
+}
+function celebracao(){
+  const ev=U.fila[0];if(!ev)return "";
+  const c=dadosCena(ev),arte=c.arte,tit=c.tit,txt=c.txt,extra=c.extra,cls=c.cls;
   return '<div class="cel" data-a="cel" role="dialog" aria-modal="true" aria-labelledby="cel-t">'+extra+'<div class="cel-box">'+
     (ev.tipo==="sequencia"?arte:'<div class="msc-g '+cls+'" data-evo="'+(ev.tipo==="evoluiu"?ev.para:"")+'">'+arte+'</div>')+
     '<h2 id="cel-t">'+tit+'</h2><p>'+esc(txt)+'</p><button class="btn" data-a="cel">Continuar</button></div></div>';
@@ -1337,6 +1452,7 @@ const ICONES={
   editar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   lixo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
   treino:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18.5h18M4.5 15.5v6M7 16.5v4M19.5 15.5v6M17 16.5v4"/><circle cx="12" cy="10" r="4.6"/><path d="M9.6 5.9c-.8-2.1 1.4-2.8 2-1.3.5-1.5 2.7-1.1 2.3.7 1.4-.6 2.4 1 1.2 1.9"/><path d="M16.3 9.6 19 10.5l-2.7.9"/><circle cx="13.4" cy="9" r=".8" fill="currentColor"/></svg>',
+  agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v4M16 3.5v4"/><circle cx="8.2" cy="14" r=".9" fill="currentColor"/><circle cx="12" cy="14" r=".9" fill="currentColor"/><circle cx="15.8" cy="14" r=".9" fill="currentColor"/><circle cx="8.2" cy="17.3" r=".9" fill="currentColor"/><circle cx="12" cy="17.3" r=".9" fill="currentColor"/></svg>',
   evolucao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16.5l4-3.5 3 2.5 4.2-4.7"/><circle cx="17.5" cy="8.5" r="3"/><path d="M15.85 5.95c-.6-1.8 1.05-2.25 1.5-.9.36-1.35 1.8-1.2 1.65.45"/><path d="M20.5 8.2l1.8.6-1.8.6"/></svg>',
   ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5.5M13.5 7H21M3 17h11.5M19.5 17H21"/><circle cx="11" cy="7" r="2.4"/><path d="M9.68 4.96c-0.48 -1.44 0.84 -1.8 1.2 -0.72c0.29 -1.08 1.44 -0.96 1.32 0.36"/><path d="M13.4 6.76l1.44 0.48 -1.44 0.48"/><circle cx="17" cy="17" r="2.4"/><path d="M15.68 14.96c-0.48 -1.44 0.84 -1.8 1.2 -0.72c0.29 -1.08 1.44 -0.96 1.32 0.36"/><path d="M19.4 16.76l1.44 0.48 -1.44 0.48"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>'
@@ -1351,8 +1467,8 @@ function render(){
   const y=window.scrollY,mesmaTela=render.ultima===U.tela,rol={};
   document.querySelectorAll('.rolagem-x[id],.rolagem-y').forEach((el,i)=>{rol[el.id||('y'+i)]=[el.scrollLeft,el.scrollTop]});
   $("#app").className="app"+(U.tela==="treino"&&U.dia!==hoje()?" retro":"");
-  $("#app").innerHTML=U.tela==="treino"?telaTreino():U.tela==="evolucao"?telaEvolucao():telaAjustes();
-  $("#nav").innerHTML=[["evolucao","Evolução"],["treino","Treino"],["ajustes","Ajustes"]].map(t=>'<button data-a="tela" data-v="'+t[0]+'"'+(t[0]==="treino"?' class="centro"':"")+(U.tela===t[0]?' aria-current="page"':"")+'>'+ICONES[t[0]]+t[1]+'</button>').join("");
+  $("#app").innerHTML=U.tela==="treino"?telaTreino():U.tela==="evolucao"?telaEvolucao():U.tela==="agenda"?telaAgenda():telaAjustes();
+  $("#nav").innerHTML=[["evolucao","Evolução"],["treino","Treino"],["agenda","Agenda"]].map(t=>'<button data-a="tela" data-v="'+t[0]+'"'+(t[0]==="treino"?' class="centro"':"")+(U.tela===t[0]?' aria-current="page"':"")+'>'+ICONES[t[0]]+t[1]+'</button>').join("");
   const sy=U.folha&&document.querySelector(".folha")?document.querySelector(".folha").scrollTop:0;
   $("#camada").className=U.tela==="treino"&&U.dia!==hoje()?"retro":"";
   $("#camada").innerHTML=folha();U.abre=false;
@@ -1369,11 +1485,11 @@ function render(){
    Cada tela, janela ou dia visitado vira um passo no histórico: voltar leva ao anterior.
    Na primeira tela, voltar pergunta antes de sair do app. */
 const Nav={ult:null,quieto:false};
-const navChave=()=>JSON.stringify([U.tela,U.card,U.folha,U.dia,U.modo]);
+const navChave=()=>JSON.stringify([U.tela,U.card,U.folha,U.dia,U.modo,U.mes]);
 function navGuardar(){
   if(Nav.quieto||!history.pushState)return;
   const k=navChave();if(k===Nav.ult)return;
-  Nav.ult=k;try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo}},"")}catch(x){}
+  Nav.ult=k;try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes}},"")}catch(x){}
 }
 function navQuieto(){Nav.quieto=true;render();Nav.quieto=false;Nav.ult=navChave();try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo}},"")}catch(x){}}
 window.addEventListener("popstate",ev=>{
@@ -1384,7 +1500,7 @@ window.addEventListener("popstate",ev=>{
   }
   if(U.fila.length){U.fila.shift();navQuieto();return}    /* voltar fecha a comemoração */
   const antes=navChave(),v=st.v||{};
-  U.tela=v.tela||"treino";U.card=v.card||null;U.dia=v.dia&&v.dia<=hoje()?v.dia:hoje();U.modo=v.modo||null;U.folha=null;U.imp=null;
+  U.tela=v.tela||"treino";U.card=v.card||null;U.mes=v.mes||null;U.dia=v.dia&&v.dia<=hoje()?v.dia:hoje();U.modo=v.modo||null;U.folha=null;U.imp=null;
   if(navChave()===antes){history.back();return}           /* passo repetido: pula */
   Nav.quieto=true;render();Nav.quieto=false;Nav.ult=navChave();
 });
@@ -1403,13 +1519,15 @@ document.addEventListener("click",ev=>{
     case "tela":U.tela=v;U.folha=null;U.card=null;U.modo=null;if(v==="treino")U.dia=hoje();render();break;
     case "dia":{const n=somaDias(U.dia,+v);if(n<=hoje()){U.dia=n;U.modo=null;render()}break}
     case "hoje":U.dia=hoje();U.modo=null;render();break;
-    case "abrir":U.dia=v;U.tela="treino";U.armado=null;U.modo=null;render();break;
+    case "abrir":U.dia=v;U.tela="treino";U.armado=null;U.modo=null;U.folha=null;render();break;
     case "excluir":excluirSessao(v);break;
     case "excluir-peso":excluirPeso(v);break;
     case "sessao":abrirSessao();break;
     case "expandir":U.abertos[v]=true;render();break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;render();break;
+    case "mes":{const [a,m]=(U.mes||hoje().slice(0,7)).split("-").map(Number);if(v==="0"){U.mes=null}else{const x=new Date(a,m-1+ +v,1);const k=x.getFullYear()+"-"+pad(x.getMonth()+1);if(k<=hoje().slice(0,7))U.mes=k}render();break}
+    case "diaag":U.diaAg=v;U.folha="dia";U.abre=true;render();break;
     case "seqinfo":U.folha="seq";U.abre=true;render();break;
     case "retro":U.folha="retro";U.retroPeso=v==="peso";U.erro="";U.abre=true;render();break;
     case "retro-ok":{const d=($("#retro-data")||{}).value||"";
