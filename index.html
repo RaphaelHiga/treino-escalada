@@ -43,6 +43,10 @@ p{margin:0}
 /* topo */
 .topo{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:6px 0 18px}
 .topo h1{font-size:44px}
+/* título do Treino congelado no alto ao rolar */
+.topo.fixo{position:sticky;top:0;z-index:15;background:var(--bg);margin:calc(-14px - env(safe-area-inset-top,0px)) -16px 14px;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 10px;border-bottom:1px solid transparent;transition:border-color .2s}
+.topo.fixo.rolou{border-bottom-color:var(--line)}
+.app.retro .dia .hoje{background:#7EC8E3;color:#062634;font-weight:700}
 .dia{display:flex;align-items:center;gap:4px;color:var(--ink2);font-size:14px;margin-top:4px}
 .dia button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink2);font-size:20px}
 .dia button:disabled{opacity:.25;cursor:default}
@@ -83,6 +87,20 @@ p{margin:0}
 .sets{display:flex;gap:8px;margin-left:auto}
 .set{width:52px;height:48px;border-radius:12px;background:var(--s1);display:grid;place-items:center;font-weight:700;font-size:15px;color:var(--ink3);font-variant-numeric:tabular-nums;position:relative;transition:background .15s}
 .set.largo{width:172px;font-size:15px}
+.sets:has(.feito){flex:1;min-width:0}
+.set.feito{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 14px;font-size:15px;color:var(--ink);text-align:left;box-shadow:inset 0 0 0 1.5px var(--line)}
+.set.feito .ic{flex:none;width:24px;height:24px;display:block}
+.set.feito .tx{display:grid;line-height:1.15;min-width:0}
+.set.feito .tx small{font-size:12px;font-weight:500;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set.feito.ok{box-shadow:none}
+.set.feito.ok .tx small{color:var(--gema-ink);opacity:.75}
+.set.feito.parcial{box-shadow:inset 0 0 0 1.5px var(--gema)}
+/* dia passado: cor de destaque azul e faixa listrada para não confundir com o registro do dia */
+.app.retro{--gema:#7EC8E3;--gema-ink:#062634}
+.retro-faixa{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-6px 0 16px;padding:12px 14px;border-radius:12px;border:1px dashed #7EC8E3;background:repeating-linear-gradient(135deg,rgba(126,200,227,.16) 0 10px,rgba(126,200,227,.05) 10px 20px);font-size:14px;color:#cfeaf4}
+.retro-faixa b{display:block;color:#7EC8E3;font-weight:700;margin-bottom:1px}
+.retro-faixa button{flex:none;height:36px;padding:0 12px;border-radius:999px;background:#7EC8E3;color:#062634;font-weight:700;font-size:13px}
+.app.retro .topo h1{color:#7EC8E3}
 .proto.alerta{color:var(--d2)}
 .set.ok{background:var(--gema);color:var(--gema-ink)}
 .set.falha{background:transparent;box-shadow:inset 0 0 0 2px var(--d3);color:var(--d3)}
@@ -721,6 +739,28 @@ function eventosSerie(slot){
 }
 
 /* ================= ações ================= */
+/* um toque marca as 3 séries com a carga atual; outro toque desfaz */
+function marcarTodas(slot){
+  const s=D.sessoes[U.dia],a=(s&&s.s[slot])||[];
+  const cheio=a.length===3&&a.every(x=>x&&x.ok);
+  const antesTinha=treinou(s),ss=sessao(D,U.dia,true);
+  let virouOk=false;
+  if(cheio)delete ss.s[slot];
+  else{const c=cargaAtual(slot),t=Date.now();ss.s[slot]=[0,1,2].map(()=>({c:c,ok:true,t:t}));D.carga[slot]=c;virouOk=true}
+  if(!temSeries(ss)&&ss.esforco==null&&!ss.dor&&!ss.escalada)delete D.sessoes[U.dia];
+  U.pop=slot+":all";
+  U.fx={slot:slot,i:"all",novo:virouOk};
+  {const ex=exDe(slot);if(virouOk&&slotsDe(ex).every(sl=>{const q=ss.s[sl]||[];return q.length===3&&q.every(x=>x&&x.ok)})){
+    U.abertos[ex.k]=true;
+    setTimeout(()=>{delete U.abertos[ex.k];U.recolheu=ex.k;if(U.tela==="treino"&&!U.folha)render();U.recolheu=null},1600);
+  }}
+  let ev=virouOk?eventosSerie(slot):[];
+  ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
+  gravar();
+  if(navigator.vibrate)try{navigator.vibrate(virouOk?12:6)}catch(x){}
+  U.fila=U.fila.concat(ev);
+  render();
+}
 function marcar(slot,i){
   const antesTinha=treinou(D.sessoes[U.dia]);
   const s=sessao(D,U.dia,true);
@@ -872,7 +912,7 @@ function posRender(mesma){
   }
   const fx=U.fx;U.fx=null;
   if(fx&&fx.novo&&U.tela==="treino"){
-    const b=document.querySelector('[data-a=set][data-s="'+fx.slot+'"][data-i="'+fx.i+'"]');
+    const b=document.querySelector(fx.i==="all"?'[data-a=feito][data-s="'+fx.slot+'"]':'[data-a=set][data-s="'+fx.slot+'"][data-i="'+fx.i+'"]');
     faiscas(b,9,["#FFC83D","#fff3c4"],34);
     const sec=b&&b.closest(".ex"),selo=sec&&sec.querySelector(".selo");
     if(selo){
@@ -886,6 +926,21 @@ function posRender(mesma){
   const t=U.tick;U.tick=null;
   if(t&&!RM){const inp=t.s==="peso"?document.querySelector("[data-a=peso-val]"):document.querySelector('[data-a=carga][data-s="'+t.s+'"]');if(inp)inp.classList.add(t.d>0?"sobe":"desce")}
 }
+/* deslizar o dedo para o lado troca de aba */
+const ABAS=["treino","evolucao","ajustes"];
+let toque=null;
+document.addEventListener("touchstart",ev=>{
+  const t=ev.touches[0];
+  if(ev.touches.length!==1||U.folha||U.fila.length||ev.target.closest(".rolagem-x,input,.mao-svg,.stp,nav")){toque=null;return}
+  toque={x:t.clientX,y:t.clientY,t:Date.now()};
+},{passive:true});
+document.addEventListener("touchend",ev=>{
+  if(!toque)return;const t=ev.changedTouches[0],dx=t.clientX-toque.x,dy=t.clientY-toque.y,dt_=Date.now()-toque.t;toque=null;
+  if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt_>700)return;
+  const i=ABAS.indexOf(U.tela)+(dx<0?1:-1);if(i<0||i>=ABAS.length)return;
+  U.tela=ABAS[i];U.folha=null;U.card=null;if(U.tela==="treino")U.dia=hoje();render();
+},{passive:true});
+window.addEventListener("scroll",()=>{const t=document.querySelector(".topo.fixo");if(t)t.classList.toggle("rolou",window.scrollY>4)},{passive:true});
 /* segurar + / − repete e acelera */
 let seg=null;
 document.addEventListener("pointerdown",ev=>{
@@ -909,15 +964,16 @@ document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp"))ev.pre
 function telaTreino(){
   const s=D.sessoes[U.dia],ehHoje=U.dia===hoje(),seq=sequencia(),p=pesoAtual();
   const dataTxt=dt(U.dia).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
-  let h='<header class="topo"><div><h1>'+(ehHoje?"Treino de hoje":"Treino de "+dm(U.dia))+'</h1>'+
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><h1>'+(ehHoje?"Treino de hoje":"Treino de "+dm(U.dia))+'</h1>'+
     '<div class="dia"><button data-a="dia" data-v="-1" aria-label="Dia anterior">‹</button><span>'+esc(dataTxt)+'</span>'+
     '<button data-a="dia" data-v="1" aria-label="Próximo dia"'+(ehHoje?" disabled":"")+'>›</button>'+
-    (ehHoje?"":'<button class="hoje" data-a="hoje">Hoje</button>')+'</div></div>'+
+    (ehHoje?"":'<button class="hoje" data-a="hoje">Voltar para hoje</button>')+'</div></div>'+
     '<div class="pills">'+(seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"")+'</div></header>';
   {const ub=D.ultimoBackup,dias=ub?diasEntre(ub,hoje()):null;
     if(ehHoje&&!U.avisoFechado&&datas().length>=5&&(dias===null||dias>=30))
       h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
-  if(datas().length<4)h+='<p class="dica">Toque na série para marcar feita. Toque de novo para desmarcar.</p>';
+  if(!ehHoje)h+='<div class="retro-faixa"><span><b>Registro de dia passado</b>Tudo aqui vai para '+esc(dataTxt)+', não para hoje.</span></div>';
+  if(datas().length<4)h+='<p class="dica">Ajuste a carga e toque em Feito quando terminar as 3 séries. Toque de novo para desfazer.</p>';
   {const pr=pesoRascunho(),pd=D.pesos.find(x=>x.data===U.dia),igual=pd&&r1(pd.kg)===r1(num(pr.v)||0);
     const atras=p?diasEntre(p.data,hoje()):null;
     const sub=pd?"Registrado neste dia":p?"Último: "+nf1.format(p.kg)+" kg em "+dm(p.data)+(ehHoje&&atras>7?", há "+atras+" dias":""):"Base para calcular a força relativa";
@@ -944,11 +1000,13 @@ function telaTreino(){
         '<div class="stp"><button data-a="menos" data-s="'+sl+'" aria-label="Menos carga">−</button>'+
         '<input data-a="carga" data-s="'+sl+'" inputmode="decimal" value="'+nf1.format(c)+'" aria-label="Carga em kg"><span>kg</span>'+
         '<button data-a="mais" data-s="'+sl+'" aria-label="Mais carga">+</button></div><div class="sets">';
-      [0,1,2].forEach(i=>{
-        const x=a[i],pop=U.pop===sl+":"+i?" pop":"";
-        const lbl="Série "+(i+1)+(x?" feita com "+nf1.format(x.c)+" kg":" não feita");
-        h+='<button class="set'+(x?(x.ok?" ok":" falha"):"")+pop+'" data-a="set" data-s="'+sl+'" data-i="'+i+'" aria-label="'+lbl+'">'+(x?nf1.format(x.c):(i+1))+'</button>';
-      });
+      {const ok=a.filter(x=>x&&x.ok),cheio=ok.length===3,pop=U.pop===sl+":all"?" pop":"";
+        const n=ok.length,arco=n?'<path d="M12 2.5 A9.5 9.5 0 '+(n>1?1:0)+' 1 '+(12+9.5*Math.sin(n*2.0944)).toFixed(2)+' '+(12-9.5*Math.cos(n*2.0944)).toFixed(2)+'" fill="none" stroke="var(--gema)" stroke-width="2.5" stroke-linecap="round"/>':"";
+        const ic=cheio?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          :'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="var(--ink3)" stroke-width="1.8"/>'+(n&&!cheio?arco:"")+'</svg>';
+        const txt=ic+'<span class="tx">'+(cheio?'Feito<small>3 × '+esc(fmtCarga(e,ok[0].c))+'</small>':n?n+' de 3<small>completar</small>':'Marcar feito<small>3 séries</small>')+'</span>';
+        const lbl=cheio?"3 séries feitas com "+nf1.format(ok[0].c)+" kg. Toque para desfazer":"Marcar as 3 séries como feitas";
+        h+='<button class="set feito'+(cheio?" ok":n?" parcial":"")+pop+'" data-a="feito" data-s="'+sl+'" aria-pressed="'+cheio+'" aria-label="'+lbl+'">'+txt+'</button>';}
       h+='</div></div>';
     });
     h+='</section>';
@@ -1239,6 +1297,7 @@ const ICONES={
 function render(){
   const y=window.scrollY,mesmaTela=render.ultima===U.tela,rol={};
   document.querySelectorAll('.rolagem-x[id],.rolagem-y').forEach((el,i)=>{rol[el.id||('y'+i)]=[el.scrollLeft,el.scrollTop]});
+  $("#app").className="app"+(U.tela==="treino"&&U.dia!==hoje()?" retro":"");
   $("#app").innerHTML=U.tela==="treino"?telaTreino():U.tela==="evolucao"?telaEvolucao():telaAjustes();
   $("#nav").innerHTML=[["treino","Treino"],["evolucao","Evolução"],["ajustes","Ajustes"]].map(t=>'<button data-a="tela" data-v="'+t[0]+'"'+(U.tela===t[0]?' aria-current="page"':"")+'>'+ICONES[t[0]]+t[1]+'</button>').join("");
   const sy=U.folha&&document.querySelector(".folha")?document.querySelector(".folha").scrollTop:0;
@@ -1260,6 +1319,7 @@ document.addEventListener("click",ev=>{
   if(a==="cel"){if(ev.target.closest(".cel-box")&&!ev.target.closest("button"))return;U.fila.shift();return render()}
   switch(a){
     case "set":marcar(sl,+b.dataset.i);break;
+    case "feito":marcarTodas(sl);break;
     case "menos":ajustarCarga(sl,-.5);break;
     case "mais":ajustarCarga(sl,.5);break;
     case "tela":U.tela=v;U.folha=null;U.card=null;if(v==="treino")U.dia=hoje();render();break;
