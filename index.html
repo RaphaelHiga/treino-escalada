@@ -401,6 +401,9 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .voltar{display:inline-flex;align-items:center;height:36px;margin:-10px 0 6px;color:var(--ink2);font-size:14px;font-weight:600}
 .gal-p{font-style:normal;font-family:var(--disp);font-size:22px;line-height:1;color:var(--ink)}
 .ex.fechado{padding:10px 0}
+.selo.falha{background:var(--d3);color:#fff}
+.ex-top.recolhivel{cursor:pointer}
+.ex-top.recolhivel::after{content:"";flex:none;width:9px;height:9px;margin:0 4px 0 6px;border-left:2px solid var(--ink3);border-top:2px solid var(--ink3);transform:rotate(45deg) translate(2px,2px)}
 .ex-btn{width:100%;text-align:left;margin-bottom:0!important}
 .ex.fechado .av{width:36px;height:36px}
 .ex.fechado .ex-top h2{font-size:22px}
@@ -816,6 +819,8 @@ function eventosSerie(slot){
 }
 
 /* ================= ações ================= */
+/* exercício registrado: cada mão com as 3 séries feitas ou com falha */
+const registrado=(s,e)=>!!s&&slotsDe(e).every(sl=>{const q=(s.s||{})[sl]||[];return q.length===3&&(q.every(x=>x&&x.ok)||q.every(x=>x&&!x.ok))});
 /* um botão, três estados a cada toque: Feito? → Feito (3 séries com a carga atual) → Falha → Feito?
    Falha: tentou e não completou. Conta como dia de treino, mas não entra em recorde, fase nem gráfico. */
 function marcarTodas(slot){
@@ -829,9 +834,10 @@ function marcarTodas(slot){
   if(!temSeries(ss)&&ss.esforco==null&&!ss.dor&&!ss.escalada)delete D.sessoes[U.dia];
   U.pop=slot+":all";
   U.fx={slot:slot,i:"all",novo:virouOk,falha:cheio};
-  {const ex=exDe(slot);if(virouOk&&slotsDe(ex).every(sl=>{const q=ss.s[sl]||[];return q.length===3&&q.every(x=>x&&x.ok)})){
-    U.abertos[ex.k]=true;
-    setTimeout(()=>{delete U.abertos[ex.k];U.recolheu=ex.k;if(U.tela==="treino"&&!U.folha)render();U.recolheu=null},1600);
+  /* feito ou falha em todas as mãos: mostra o resultado um instante e recolhe */
+  {const ex=exDe(slot);if(!falhou&&registrado(ss,ex)){
+    U.abertos[ex.k]=true;clearTimeout(U.tRec);
+    U.tRec=setTimeout(()=>{delete U.abertos[ex.k];U.recolheu=ex.k;if(U.tela==="treino"&&!U.folha)render();U.recolheu=null},1600);
   }}
   let ev=virouOk?eventosSerie(slot):[];
   ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
@@ -1087,15 +1093,15 @@ function telaTreino(){
   if(modo==="peso"){h+='<div class="fechar"><button class="btn sec" data-a="tela" data-v="evolucao">Voltar para a Evolução</button></div>';U.pop=null;return h}
   EX.forEach(e=>{
     const st=estadoAve(e),mr=melhorRel(e,somaDias(hoje(),-JANELA)).rel;
-    const feito=slotsDe(e).every(sl=>{const q=(s&&s.s[sl])||[];return q.length===3&&q.every(x=>x&&x.ok)});
+    const feito=registrado(s,e),comFalha=feito&&falhouEx(s,e);
     if(feito&&!U.abertos[e.k]){
-      const res=slotsDe(e).map(sl=>(e.maos?(/E$/.test(sl)?"Esq ":"Dir "):"")+fmtCarga(e,s.s[sl][0].c)).join(" · ");
-      h+='<section class="ex fechado'+(U.recolheu===e.k?" recolhe":"")+'" data-ex="'+e.k+'"><button class="ex-top ex-btn" data-a="expandir" data-v="'+e.k+'" aria-label="'+e.nome+' completo. Toque para abrir">'+
-        '<div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div><div><div class="tit"><h2>'+e.nome+'</h2><span class="selo">✓</span></div><p class="proto">3 séries · '+esc(res)+'</p></div>'+
+      const res=slotsDe(e).map(sl=>(e.maos?(/E$/.test(sl)?"Esq ":"Dir "):"")+(s.s[sl][0].ok?"":"falha ")+fmtCarga(e,s.s[sl][0].c)).join(" · ");
+      h+='<section class="ex fechado'+(U.recolheu===e.k?" recolhe":"")+'" data-ex="'+e.k+'"><button class="ex-top ex-btn" data-a="expandir" data-v="'+e.k+'" aria-label="'+e.nome+(comFalha?" com falha":" completo")+'. Toque para abrir">'+
+        '<div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div><div><div class="tit"><h2>'+e.nome+'</h2>'+(comFalha?'<span class="selo falha">✕</span>':'<span class="selo">✓</span>')+'</div><p class="proto'+(comFalha?" fal":"")+'">3 séries · '+esc(res)+'</p></div>'+
         (mr!==null?'<span class="rel">'+pct(mr)+'<small>do peso</small></span>':"")+'</button></section>';
       return;
     }
-    h+='<section class="ex" data-ex="'+e.k+'"><div class="ex-top"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
+    h+='<section class="ex" data-ex="'+e.k+'"><div class="ex-top'+(feito?' recolhivel" data-a="recolher" data-v="'+e.k+'" title="Toque para recolher':'')+'"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
       '<div><div class="tit"><h2>'+e.nome+'</h2><button class="info-bt" data-a="info" data-v="'+e.k+'" aria-label="Como fazer: '+e.nome+'">'+ICONES.info+'</button>'+(slotsDe(e).every(sl=>{const q=(s&&s.s[sl])||[];return q.length===3&&q.every(x=>x&&x.ok)})?'<span class="selo" aria-label="Exercício completo">✓</span>':"")+'</div><p class="proto">'+e.proto+'</p></div>'+
       (mr!==null?'<span class="rel">'+pct(mr)+'<small>do peso</small></span>':"")+'</div>';
     slotsDe(e).forEach(sl=>{
@@ -1556,7 +1562,8 @@ document.addEventListener("click",ev=>{
     case "excluir":excluirSessao(v);break;
     case "excluir-peso":excluirPeso(v);break;
     case "sessao":abrirSessao();break;
-    case "expandir":U.abertos[v]=true;render();break;
+    case "expandir":U.abertos[v]=true;clearTimeout(U.tRec);render();break;
+    case "recolher":delete U.abertos[v];U.recolheu=v;render();U.recolheu=null;break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;render();break;
     case "mes-ir":U.mes=v===hoje().slice(0,7)?null:v;render();break;
