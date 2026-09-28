@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Diário do Frango Escalador</title>
+<title>Diário do Escalador Frango</title>
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Frango Escalador">
+<meta name="apple-mobile-web-app-title" content="Escalador Frango">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -197,10 +197,20 @@ button.pill{cursor:pointer}
 .mes-t{min-width:120px;text-align:center}
 .ag-sem,.ag-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .ag-sem{margin:14px 0 6px}.ag-sem span{text-align:center;font-size:12px;color:var(--ink3);font-weight:600}
-.ag-dia{position:relative;aspect-ratio:1;border-radius:12px;background:var(--s1);font-weight:700;font-size:15px;color:var(--ink3);font-variant-numeric:tabular-nums}
-.ag-dia.f{background:var(--gema);color:var(--gema-ink)}
-.ag-dia.e{background:var(--ink2);color:#000}
-.ag-dia.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink3)}
+.ag-dia{position:relative;aspect-ratio:1;border-radius:12px;background:var(--s1);font-weight:700;font-size:15px;color:var(--ink3);font-variant-numeric:tabular-nums;overflow:hidden}
+.ag-dia b{position:absolute;top:4px;left:6px;font-size:12px;font-weight:700;line-height:1}
+.cab{fill:currentColor;stroke:currentColor;stroke-width:0;stroke-linejoin:round}
+.cab .olho{fill:var(--s1)}
+.ag-dia .cab{position:absolute;left:22%;top:24%;width:70%;height:70%;opacity:0;pointer-events:none}
+.ag-dia.f,.ag-dia.e,.ag-dia.d{color:var(--ink2)}
+.ag-dia.f .cab{color:var(--gema);opacity:.9}
+.ag-dia.e .cab{color:var(--ink2);opacity:.75}
+.ag-dia.d .cab,.ag-leg .d .cab{color:var(--ink3);fill:none;stroke-width:1.5;opacity:.9}
+.ag-dia.d .cab .olho,.ag-leg .d .cab .olho{fill:currentColor;stroke:none}
+.ag-leg span{display:inline-flex;align-items:center;gap:5px}
+.ag-leg .cab{width:18px;height:18px;flex:none}
+.ag-leg .f .cab{color:var(--gema)}.ag-leg .e .cab{color:var(--ink2)}
+.hist-tit{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .ag-dia.x::after{content:"";position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
 .ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
 .ag-dia.fut{opacity:.3}
@@ -935,7 +945,7 @@ function exportar(){
   try{
     const arq=new File([json],nome,{type:"application/json"});
     if(matchMedia("(pointer:coarse)").matches&&navigator.canShare&&navigator.canShare({files:[arq]})){
-      navigator.share({files:[arq],title:"Backup do Diário do Frango Escalador"}).then(feito).catch(err=>{if(!err||err.name!=="AbortError")baixar(json,nome,feito)});
+      navigator.share({files:[arq],title:"Backup do Diário do Escalador Frango"}).then(feito).catch(err=>{if(!err||err.name!=="AbortError")baixar(json,nome,feito)});
       return;
     }
   }catch(e){}
@@ -1069,6 +1079,7 @@ document.addEventListener("click",ev=>{if(seg&&seg.engole){ev.stopPropagation();
 document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp"))ev.preventDefault()});
 
 /* ================= telas ================= */
+const pillSeq=seq=>seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"";
 function telaTreino(){
   const s=D.sessoes[U.dia],ehHoje=U.dia===hoje(),seq=sequencia(),p=pesoAtual();
   const dataTxt=dt(U.dia).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
@@ -1076,7 +1087,7 @@ function telaTreino(){
     '<div class="dia"><button data-a="dia" data-v="-1" aria-label="Dia anterior">‹</button><span>'+esc(dataTxt)+'</span>'+
     '<button data-a="dia" data-v="1" aria-label="Próximo dia"'+(ehHoje?" disabled":"")+'>›</button>'+
     (ehHoje?"":'<button class="hoje" data-a="hoje">Voltar para hoje</button>')+'</div></div>'+
-    '<div class="pills">'+(seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"")+'</div></header>';
+    '<div class="pills"><button class="eng" data-a="tela" data-v="ajustes" aria-label="Ajustes">'+ICONES.ajustes+'Ajustes</button>'+pillSeq(seq)+'</div></header>';
   {const ub=D.ultimoBackup,dias=ub?diasEntre(ub,hoje()):null;
     if(ehHoje&&!U.avisoFechado&&datas().length>=5&&(dias===null||dias>=30))
       h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
@@ -1213,7 +1224,7 @@ function resumoSessoes(ds){
   return n+(n>1?" sessões":" sessão")+(nf?' · <span class="fal">'+nf+(nf>1?" falhas":" falha")+'</span>':"")+(nd?" · "+nd+(nd>1?" descansos":" descanso"):"");
 }
 function telaEvolucao(){
-  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div><div class="pills"><button class="eng" data-a="tela" data-v="ajustes" aria-label="Ajustes">'+ICONES.ajustes+'Ajustes</button></div></header>';
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div></header>';
   h+=U.card?'<button class="voltar" data-a="card" data-v="">‹ Todos os exercícios</button>':'<div class="gal">';
   if(!U.card)EX.forEach(e=>{const st=estadoAve(e);
     h+='<button data-a="card" data-v="'+e.k+'">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur})+'<b>'+e.curto+'</b>'+(()=>{const r=melhorRel(e,somaDias(hoje(),-JANELA)).rel;return r!==null?'<i class="gal-p">'+pct(r)+'</i>':""})()+'<span>'+(st.fase===null?"Sem teste":FASES_CURTO[st.fase])+'</span></button>'});
@@ -1264,6 +1275,8 @@ function telaEvolucao(){
   return h;
 }
 /* ================= agenda ================= */
+/* cabeça de frango: selo dos dias no histórico */
+const SELO='<svg class="cab" viewBox="6 3 34 33" aria-hidden="true"><path d="M11 14c-2-4 1-8 5-6 1-4 6-5 8-1 3-2 7 1 5 5z"/><path d="M29 19l9 3.5-9 3.5z"/><path d="M26 28c3 0 4 2.5 3.5 5-.5 2-3 2-3.5 0z"/><circle cx="19" cy="23" r="11.5"/><circle class="olho" cx="22.5" cy="20" r="2.2"/></svg>';
 const MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 const falhasDoDia=s=>s?EX.filter(e=>falhouEx(s,e)):[];
 function classeDia(d){
@@ -1276,7 +1289,7 @@ function telaAgenda(){
   const nomeMes=(k,curto)=>{const q=k.split("-").map(Number),n=MESES[q[1]-1];return (curto?n.slice(0,3):n.charAt(0).toUpperCase()+n.slice(1))+(curto?" "+String(q[0]).slice(2):" de "+q[0])};
   const primeiro=(datas()[0]||hoje()).slice(0,7),meses=[];
   for(let k=hoje().slice(0,7);;){meses.push(k);if(k<=primeiro||meses.length>=36)break;const q=k.split("-").map(Number),x=new Date(q[0],q[1]-2,1);k=x.getFullYear()+"-"+pad(x.getMonth()+1)}
-  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div style="flex:1"><h1>Histórico</h1>'+
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div style="flex:1"><div class="hist-tit"><h1>Histórico</h1>'+pillSeq(sequencia())+'</div>'+
     '<div class="mes-nav"><button class="mes-bt" data-a="mes" data-v="-1" aria-label="Mês anterior"'+(mes<=primeiro?" disabled":"")+'>‹</button><span class="mes-t">'+nomeMes(mes)+'</span>'+
     '<button class="mes-bt" data-a="mes" data-v="1" aria-label="Próximo mês"'+(atual?" disabled":"")+'>›</button></div>'+
     (meses.length>1?'<div class="mes-chips rolagem-x" id="mes-chips">'+meses.slice().reverse().map(k=>'<button class="mes-chip'+(k===mes?" on":"")+'" data-a="mes-ir" data-v="'+k+'">'+nomeMes(k,true)+'</button>').join("")+'</div>':"")+
@@ -1285,10 +1298,10 @@ function telaAgenda(){
   for(let k=0;k<vazio;k++)grade+='<span></span>';
   for(let n=1;n<=nDias;n++){const d=mes+"-"+pad(n),s=D.sessoes[d];
     if(treinou(s))tr++;else if(descansou(d))de++;fa+=falhasDoDia(s).length;
-    grade+='<button class="ag-dia '+classeDia(d)+'" data-a="diaag" data-v="'+d+'"'+(d>hoje()?" disabled":"")+' aria-label="'+n+' de '+MESES[m-1]+'">'+n+'</button>'}
+    grade+='<button class="ag-dia '+classeDia(d)+'" data-a="diaag" data-v="'+d+'"'+(d>hoje()?" disabled":"")+' aria-label="'+n+' de '+MESES[m-1]+'">'+SELO+'<b>'+n+'</b></button>'}
   grade+='</div>';
   h+='<p class="sec-sub">'+tr+(tr===1?" dia":" dias")+' com treino · '+de+' de descanso'+(fa?' · <span class="fal">'+fa+(fa===1?" falha":" falhas")+'</span>':"")+'</p>'+grade+
-    '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--ink3)"></i>descanso</span></div>'+
+    '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span></div>'+
     '<p class="dica" style="margin-top:14px;text-align:center">Toque num dia para ver tudo o que foi registrado.</p>';
   return h;
 }
@@ -1329,7 +1342,7 @@ function folhaDia(d){
 }
 function telaAjustes(){
   const p=pesoAtual();
-  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><button class="voltar" data-a="tela" data-v="evolucao">‹ Evolução</button><h1>Ajustes</h1></div></header>';
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><button class="voltar" data-a="tela" data-v="treino">‹ Treino</button><h1>Ajustes</h1></div></header>';
   h+='<section class="aj"><h2>Cortes das fases</h2><p>Em % do peso corporal. Nos exercícios pendurados conta peso + carga; nos de levantar do chão, só a carga.</p>'+
     '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Frangão</th><th>Máquina</th></tr></thead><tbody>';
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
@@ -1626,7 +1639,7 @@ document.addEventListener("visibilitychange",()=>{
 function abertura(){
   const el=$("#abertura");if(!el)return;
   if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){el.remove();return}
-  el.innerHTML='<div class="caixa"><div class="msc-g">'+ave({cor:"#FFC83D"},{fase:0,todas:true})+'</div><h1>Diário do<br>Frango Escalador</h1><p class="nome-fase">'+FASES[0]+'</p><div class="passos"><i class="on"></i><i></i><i></i><i></i></div></div>';
+  el.innerHTML='<div class="caixa"><div class="msc-g">'+ave({cor:"#FFC83D"},{fase:0,todas:true})+'</div><h1>Diário do<br>Escalador Frango</h1><p class="nome-fase">'+FASES[0]+'</p><div class="passos"><i class="on"></i><i></i><i></i><i></i></div></div>';
   const svg=el.querySelector("svg"),bu=svg.querySelector(".burst");bu.setAttribute("stroke","#fff");
   let f=0,fim=false;const ts=[];
   const trocar=n=>{
