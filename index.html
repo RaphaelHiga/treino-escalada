@@ -146,6 +146,16 @@ p{margin:0}
 .sec-linha .sec-t{margin:0}
 .add-bt{width:40px;height:40px;border-radius:50%;background:var(--s1);display:grid;place-items:center;font-size:24px;line-height:1;color:var(--ink)}
 .data-in{display:block;width:100%;height:52px;border:0;border-radius:12px;background:var(--s2);color:var(--ink);font-size:17px;padding:0 14px;color-scheme:dark}
+button.pill{cursor:pointer}
+.seq-top{display:flex;align-items:center;gap:12px;margin:4px 0 6px}
+.seq-top svg{width:44px;height:55px}
+.seq-top b{font-family:var(--disp);font-size:64px;font-weight:400;line-height:.9}
+.seq-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.seq-dias div{display:grid;justify-items:center;gap:3px;font-size:11px;color:var(--ink3)}
+.seq-dias i{width:100%;max-width:38px;aspect-ratio:1;border-radius:10px;background:var(--s2);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:600;color:var(--ink3)}
+.seq-dias i.f{background:var(--gema);color:var(--gema-ink)}
+.seq-dias i.e{background:var(--ink2);color:#000}
+.seq-dias i.hoje{box-shadow:0 0 0 2px var(--ink)}
 .sec-sub{font-size:13px;color:var(--ink3);margin-bottom:8px}
 .estagios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .estagios div{display:grid;justify-items:center;align-content:start;gap:2px;text-align:center}
@@ -572,6 +582,11 @@ function sequencia(){
   let n=0;while(treinou(D.sessoes[d])){n++;d=somaDias(d,-1)}
   return n;
 }
+function melhorSequencia(){
+  let m=0,n=0,ant=null;
+  datas().forEach(d=>{if(!treinou(D.sessoes[d]))return;n=ant&&somaDias(ant,1)===d?n+1:1;ant=d;if(n>m)m=n});
+  return m;
+}
 function eventosSequencia(antes){
   if(U.dia!==hoje()||antes||!treinou(D.sessoes[U.dia]))return [];
   const n=sequencia();
@@ -898,7 +913,7 @@ function telaTreino(){
     '<div class="dia"><button data-a="dia" data-v="-1" aria-label="Dia anterior">‹</button><span>'+esc(dataTxt)+'</span>'+
     '<button data-a="dia" data-v="1" aria-label="Próximo dia"'+(ehHoje?" disabled":"")+'>›</button>'+
     (ehHoje?"":'<button class="hoje" data-a="hoje">Hoje</button>')+'</div></div>'+
-    '<div class="pills">'+(seq?'<span class="pill chama'+(U.chama?" pulsa":"")+'" title="Dias seguidos com treino">'+CHAMA+seq+'</span>':"")+'</div></header>';
+    '<div class="pills">'+(seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"")+'</div></header>';
   {const ub=D.ultimoBackup,dias=ub?diasEntre(ub,hoje()):null;
     if(ehHoje&&!U.avisoFechado&&datas().length>=5&&(dias===null||dias>=30))
       h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
@@ -1257,6 +1272,7 @@ document.addEventListener("click",ev=>{
     case "expandir":U.abertos[v]=true;render();break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;render();break;
+    case "seqinfo":U.folha="seq";U.abre=true;render();break;
     case "retro":U.folha="retro";U.erro="";U.abre=true;render();break;
     case "retro-ok":{const d=($("#retro-data")||{}).value||"";
       if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){U.erro="Escolha um dia.";return render()}
