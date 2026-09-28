@@ -926,11 +926,10 @@ function folha(){
     return h;
   }
   if(U.folha==="info"&&INFO[U.info]){
-    const e=EX.find(x=>x.k===U.info),i=INFO[e.k],c=D.cortes[e.k];
+    const e=EX.find(x=>x.k===U.info),i=INFO[e.k];
     const lin=(t,x)=>'<li><b>'+t+'</b>'+esc(x)+'</li>';
     return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+e.nome+'</h2><p class="sub">'+e.proto+'</p><ul class="info-lista">'+
       lin("Como fazer",i.faz)+lin("Séries",i.series)+lin("Descanso",DESCANSO)+lin("Carga",i.carga)+
-      lin("Fase do frango",(e.lev?"Conta só a carga":"Conta peso corporal + carga")+", em % do peso. Frango em "+c[0]+"%, Frango forte em "+c[1]+"%, Frango máquina em "+c[2]+"%. Só vale com as 3 séries feitas.")+
       '</ul><button class="btn" data-a="fundo-fechar">Entendi</button></div></div>';
   }
   if(U.folha==="importar"&&U.imp){
