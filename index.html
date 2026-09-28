@@ -580,6 +580,14 @@ const CENA_ACO=C_PERNAS+C_CORPO+cBraco("M-15 8 q-14 -6 -16 -26",-31,-20,"#cfd6de
   '<path d="M-35 -26 v-6 M-31 -27 v-8 M-27 -26 v-6 M27 -26 v-6 M31 -27 v-8 M35 -26 v-6" stroke="#2B2B2B" stroke-width="4.4" stroke-linecap="round"/><path d="M-35 -26 v-6 M-31 -27 v-8 M-27 -26 v-6 M27 -26 v-6 M31 -27 v-8 M35 -26 v-6" stroke="#cfd6de" stroke-width="2.2" stroke-linecap="round"/>'+
   C_CABECA+C_FELIZ+C_BOCEJO+C_BARBELA+
   '<path class="brilho" d="M-42 -44 l1.5 3.5 l3.5 1.5 l-3.5 1.5 l-1.5 3.5 l-1.5 -3.5 l-3.5 -1.5 l3.5 -1.5z" fill="#fff"/><path class="brilho" style="animation-delay:.5s" d="M42 -46 l1.5 3.5 l3.5 1.5 l-3.5 1.5 l-1.5 3.5 l-1.5 -3.5 l-3.5 -1.5 l3.5 -1.5z" fill="#fff"/><path class="brilho" style="animation-delay:1s" d="M-24 -40 l1 2.5 l2.5 1 l-2.5 1 l-1 2.5 l-1 -2.5 l-2.5 -1 l2.5 -1z" fill="#FFC83D"/><path class="brilho" style="animation-delay:1.3s" d="M24 -42 l1 2.5 l2.5 1 l-2.5 1 l-1 2.5 l-1 -2.5 l-2.5 -1 l2.5 -1z" fill="#FFC83D"/>';
+/* não escalou: folga no sofá com pipoca e controle remoto */
+const CENA_SOFA='<rect x="-50" y="14" width="100" height="34" rx="10" fill="#8a4b3a" stroke="#2B2B2B" stroke-width="2"/><rect x="-58" y="6" width="16" height="42" rx="7" fill="#a35a46" stroke="#2B2B2B" stroke-width="2"/><rect x="42" y="6" width="16" height="42" rx="7" fill="#a35a46" stroke="#2B2B2B" stroke-width="2"/><rect x="-42" y="-8" width="84" height="26" rx="9" fill="#a35a46" stroke="#2B2B2B" stroke-width="2"/><path d="M-44 48 v6 M44 48 v6" stroke="#2B2B2B" stroke-width="4" stroke-linecap="round"/>'+
+  '<path d="M-6 34 l-6 12 h-8 M6 34 l6 12 h8" stroke="#FF8C1A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'+
+  '<g class="respira"><circle cx="0" cy="14" r="20" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="2"/></g><path d="M-17 22 q17 6 34 0 l1 10 h-36z" fill="#3b4a63" stroke="#2B2B2B" stroke-width="1.6" stroke-linejoin="round"/>'+
+  '<path d="M-24 4 l18 0 l-3 20 h-12z" fill="#fff" stroke="#2B2B2B" stroke-width="1.6" stroke-linejoin="round"/><path d="M-20 4 l1.5 20 M-14 4 v20 M-9 4 l-1.5 20" stroke="#E84855" stroke-width="2.2"/><circle cx="-21" cy="1" r="3" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/><circle cx="-15" cy="-1" r="3.2" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/><circle cx="-10" cy="1" r="3" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/>'+
+  cBraco("M-14 6 q-8 6 -6 14",-20,20)+cBraco("M15 6 q14 -2 18 -14",33,-8)+'<rect x="30" y="-24" width="7" height="16" rx="2.5" fill="#2B2B2B"/><circle cx="33.5" cy="-20" r="1.6" fill="#E84855"/>'+
+  '<circle class="voa" cx="-30" cy="-30" r="3" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/><circle class="voa" style="animation-delay:.9s" cx="-40" cy="-16" r="2.6" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/>'+
+  '<g transform="translate(0 4)">'+C_CABECA+C_SONO+C_BICO+C_BARBELA+'</g>';
 function cena(arte,cor){return '<svg class="msc" viewBox="66 8 248 248" aria-hidden="true"><circle cx="190" cy="132" r="118" fill="'+cor+'"/><ellipse cx="190" cy="218" rx="50" ry="7" fill="#000" opacity=".35"/><g class="ave"><g transform="translate(190 144) scale(1.35)">'+arte+'</g></g></svg>'}
 
 const FERRUGEM='<g opacity=".85"><circle cx="182" cy="160" r="5" fill="#8a4a1f"/><circle cx="201" cy="172" r="4" fill="#8a4a1f"/><circle cx="191" cy="186" r="3" fill="#8a4a1f"/><circle cx="176" cy="92" r="4" fill="#8a4a1f"/><circle cx="207" cy="80" r="3" fill="#8a4a1f"/></g><path d="M92 58 L136 58 M92 58 L92 102 M92 58 L128 94 M100 58 q0 10 -8 12 M114 58 q-2 18 -22 22 M128 58 q-4 28 -36 34" stroke="#d9d4ca" stroke-width="1.6" fill="none" opacity=".75"/><text x="248" y="96" fill="#d9d4ca" font-family="Archivo,sans-serif" font-size="18" font-weight="700" transform="rotate(12 248 96)">nhéc</text>';
@@ -680,6 +688,7 @@ function salvarSessao(){
   s.escalada=U.escSim?{min:U.escMin,int:U.escInt}:false;
   gravar();U.folha=null;
   if(s.escalada)U.fila.push({tipo:"escalada",min:s.escalada.min,int:s.escalada.int});
+  else U.fila.push({tipo:"semescalada"});
   if(forta)U.fila.push({tipo:"esforco",nota:s.esforco});
   if(s.dor){const m=Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]));U.fila.push({tipo:"dor",nivel:m})}
   else U.fila.push({tipo:"semdor"});
@@ -1019,6 +1028,7 @@ function celebracao(){
     tit=["Treino fofo","Treino normal","Espanco!"][n];
     txt=["Fortalecimento "+ev.nota+". Treino fofinho: recuperar também é treino.","Fortalecimento "+ev.nota+". Treino honesto, cumpriu o combinado.","Fortalecimento "+ev.nota+". Capricha no descanso e na comida hoje."][n];
     arte=cena(CENA_ESF[n],["#35507a","#2F5A4A","#6E4230"][n])}
+  else if(ev.tipo==="semescalada"){tit="Folga da parede";txt="Não escalou "+(U.dia===hoje()?"hoje":"neste dia")+". Descansar também faz parte.";arte=cena(CENA_SOFA,"#463C6E")}
   else if(ev.tipo==="semdor"){tit="Dedos de aço";txt="Sem dor nos dedos. Segue o jogo.";arte=cena(CENA_ACO,"#2F5A4A")}
   else if(ev.tipo==="escalada"){const n=Math.max(0,ESC_INT.findIndex(x=>x[0]===ev.int)),t=ev.min<=60?0:ev.min<=120?1:2;
     tit=["Rapidinha","Sessão cheia","Morou no ginásio"][t];
