@@ -324,7 +324,7 @@ nav button[aria-current=page]{color:var(--gema)}
 
 /* ================= configuração ================= */
 const EX=[
-  {k:"maxhang", nome:"Max hang",    curto:"Max hang",  proto:"3 × 10 s na agarra de 20 mm",               lev:false, maos:false, ini:0,  cor:"#2E4057"},
+  {k:"maxhang", nome:"Max Hang",    curto:"Max Hang",  proto:"3 × 10 s na agarra de 20 mm",               lev:false, maos:false, ini:0,  cor:"#2E4057"},
   {k:"resist",  nome:"Resistência", curto:"Resist.",   proto:"3 × 6 repeaters de 7 s / 3 s, agarra de 20 mm", lev:false, maos:false, ini:0,  cor:"#463C6E"},
   {k:"edge",    nome:"Edge Lift",   curto:"Edge",      proto:"3 × 10 s por mão no bloco de 20 mm",         lev:true,  maos:true,  ini:0,  cor:"#2F5A4A"},
   {k:"barra",   nome:"Barra Pronada", curto:"Barra",   proto:"3 × 5 repetições",                           lev:false, maos:false, ini:0,  cor:"#6E4230"},
@@ -904,7 +904,7 @@ function celebracao(){
   let arte="",tit="",txt="",extra="",cls="";
   if(ev.tipo==="recorde"){tit="Recorde!";txt=ev.texto;arte=ave(e,{fase:st.fase,cur:st.cur});cls="festa";extra=confete()}
   else if(ev.tipo==="forca"){tit="Mais forte";txt=ev.texto;arte=ave(e,{fase:st.fase,flex:true,cur:st.cur});cls="festa";extra='<span class="flutua">+'+nf1.format(ev.ganho)+'%</span>'}
-  else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida: "+D.cortes[e.k][ev.para-1]+"% do peso no "+e.nome.toLowerCase()+". Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
+  else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida no "+e.nome+": "+D.cortes[e.k][ev.para-1]+"% do peso. Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
   else if(ev.tipo==="regrediu"){tit="Perdeu força";txt="Sem repetir a marca nos últimos "+JANELA+" dias, o "+e.nome.toLowerCase()+" voltou para "+FASES[ev.para]+". Um bom treino e ele volta.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit="Dedo dolorido";txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
