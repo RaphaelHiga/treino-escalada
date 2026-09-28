@@ -483,10 +483,19 @@ function dorRecente(){
   datas().forEach(d=>{if(d<lim)return;const p=D.sessoes[d].dor;if(p)Object.keys(p).forEach(k=>{m=Math.max(m,p[k])})});
   return m;
 }
+/* dia de treino: fortalecimento ou escalada */
+const treinou=s=>temSeries(s)||!!(s&&s.escalada);
+const MARCOS_SEQ=[3,7,14,21,30,50,75,100,150,200,365];
 function sequencia(){
-  let d=hoje();if(!temSeries(D.sessoes[d]))d=somaDias(d,-1);
-  let n=0;while(temSeries(D.sessoes[d])){n++;d=somaDias(d,-1)}
+  let d=hoje();if(!treinou(D.sessoes[d]))d=somaDias(d,-1);
+  let n=0;while(treinou(D.sessoes[d])){n++;d=somaDias(d,-1)}
   return n;
+}
+function eventosSequencia(antes){
+  if(U.dia!==hoje()||antes||!treinou(D.sessoes[U.dia]))return [];
+  const n=sequencia();
+  if(n>=2)U.chama=true;
+  return MARCOS_SEQ.indexOf(n)>=0?[{tipo:"sequencia",n:n}]:[];
 }
 function estadoAve(e){
   const f=faseAtual(e);
@@ -558,7 +567,7 @@ function eventosSerie(slot){
 
 /* ================= ações ================= */
 function marcar(slot,i){
-  const antesTinha=temSeries(D.sessoes[U.dia]);
+  const antesTinha=treinou(D.sessoes[U.dia]);
   const s=sessao(D,U.dia,true);
   const a=s.s[slot]||(s.s[slot]=[null,null,null]);
   const cur=a[i];let virouOk=false;
@@ -570,12 +579,7 @@ function marcar(slot,i){
   if(!temSeries(s)&&s.esforco==null&&!s.dor&&!s.escalada)delete D.sessoes[U.dia];
   U.pop=slot+":"+i;
   let ev=virouOk?eventosSerie(slot):[];
-  ev=ev.concat(verificarFases(true));
-  if(U.dia===hoje()&&!antesTinha&&temSeries(D.sessoes[U.dia])){
-    const n=sequencia();
-    if(n>=2)U.chama=true;
-    if([3,7,14,21,30,50,75,100,150,200,365].indexOf(n)>=0)ev.push({tipo:"sequencia",n:n});
-  }
+  ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
   gravar();
   if(navigator.vibrate)try{navigator.vibrate(virouOk?12:[8,40,8])}catch(x){}
   U.fila=U.fila.concat(ev);
@@ -600,6 +604,7 @@ function salvarSessao(){
   if(U.escSim&&!U.escMin){U.erro="Escolha quanto tempo você escalou.";return render()}
   if(U.escSim&&!U.escInt){U.erro="Escolha a intensidade da escalada.";return render()}
   if(!forta&&!U.escSim&&!U.dorSim){U.erro="Nada para salvar: sem séries, sem escalada e sem dor.";return render()}
+  const antes=treinou(D.sessoes[U.dia]);
   const s=sessao(D,U.dia,true);
   s.esforco=forta?U.esf:null;s.dor=U.dorSim?Object.assign({},U.dorP):null;
   s.escalada=U.escSim?{min:U.escMin,int:U.escInt}:false;
@@ -607,6 +612,7 @@ function salvarSessao(){
   if(forta)U.fila.push({tipo:"esforco",nota:s.esforco});
   if(s.dor){const m=Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]));U.fila.push({tipo:"dor",nivel:m})}
   if(s.escalada)U.fila.push({tipo:"escalada",min:s.escalada.min,int:s.escalada.int});
+  U.fila=U.fila.concat(eventosSequencia(antes));
   toast("Sessão salva");render();
 }
 let tArm;
