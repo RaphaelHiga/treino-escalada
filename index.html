@@ -827,12 +827,12 @@ function salvarSessao(){
   s.esforco=forta?U.esf:null;s.dor=U.dorSim?Object.assign({},U.dorP):null;
   s.escalada=U.escSim?{min:U.escMin,int:U.escInt}:false;
   gravar();U.folha=null;
-  if(s.escalada)U.fila.push({tipo:"escalada",min:s.escalada.min,int:s.escalada.int});
-  else U.fila.push({tipo:"semescalada"});
-  if(forta)U.fila.push({tipo:"esforco",nota:s.esforco});
-  else if(s.escalada)U.fila.push({tipo:"semforta"});
-  if(s.dor){const m=Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]));U.fila.push({tipo:"dor",nivel:m})}
-  else U.fila.push({tipo:"semdor"});
+  /* mesma ordem das perguntas da janela: com fortalecimento é nota, dor, escalada;
+     sem fortalecimento ("Como foi o dia?") é escalada, dor */
+  const escal=s.escalada?{tipo:"escalada",min:s.escalada.min,int:s.escalada.int}:{tipo:"semescalada"};
+  const dorEv=s.dor?{tipo:"dor",nivel:Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]))}:{tipo:"semdor"};
+  if(forta)U.fila.push({tipo:"esforco",nota:s.esforco},dorEv,escal);
+  else U.fila.push.apply(U.fila,(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv]));
   U.fila=U.fila.concat(eventosSequencia(antes));
   toast("Sessão salva");render();
 }
