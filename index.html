@@ -415,6 +415,13 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .ex.completa::before{content:"";position:absolute;inset:0 -16px;z-index:-1;background:var(--gema);opacity:0;animation:campo 1s ease-out}
 .ex.completa::after{content:"";position:absolute;inset:0 -16px;z-index:-1;background:linear-gradient(100deg,transparent 30%,rgba(255,236,170,.45) 50%,transparent 70%);background-size:250% 100%;background-position:100% 0;animation:varre .9s cubic-bezier(.3,.7,.3,1) .05s}
 @keyframes campo{0%{opacity:0}20%{opacity:.2}100%{opacity:0}}
+.ex.falhou-anim{position:relative;isolation:isolate}
+.ex.falhou-anim::before{content:"";position:absolute;inset:0 -16px;z-index:-1;background:var(--d3);opacity:0;animation:campo .9s ease-out}
+.av.abalado{animation:abalado .9s ease-in-out}
+@keyframes abalado{20%{transform:translateY(3px) scale(1.06,.9) rotate(-7deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(2deg)}}
+.caco{position:fixed;width:7px;height:5px;margin:-2px 0 0 -3px;border-radius:1px;z-index:45;pointer-events:none;animation:caco .85s cubic-bezier(.4,0,.8,.6) forwards}
+@keyframes caco{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+
 @keyframes varre{from{background-position:100% 0}to{background-position:-50% 0}}
 .ex.completa .set.ok{animation:onda .5s cubic-bezier(.3,1.8,.5,1) both}
 .ex.completa .linha .set.ok:nth-child(2){animation-delay:.08s}
@@ -814,7 +821,7 @@ function marcarTodas(slot){
   else{const c=cargaAtual(slot),t=Date.now();ss.s[slot]=[0,1,2].map(()=>({c:c,ok:true,t:t}));D.carga[slot]=c;virouOk=true}
   if(!temSeries(ss)&&ss.esforco==null&&!ss.dor&&!ss.escalada)delete D.sessoes[U.dia];
   U.pop=slot+":all";
-  U.fx={slot:slot,i:"all",novo:virouOk};
+  U.fx={slot:slot,i:"all",novo:virouOk,falha:cheio};
   {const ex=exDe(slot);if(virouOk&&slotsDe(ex).every(sl=>{const q=ss.s[sl]||[];return q.length===3&&q.every(x=>x&&x.ok)})){
     U.abertos[ex.k]=true;
     setTimeout(()=>{delete U.abertos[ex.k];U.recolheu=ex.k;if(U.tela==="treino"&&!U.folha)render();U.recolheu=null},1600);
@@ -950,6 +957,16 @@ let tT;function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on
 
 /* ================= animações ================= */
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+/* falha: cacos caindo do botão, a linha pisca vermelho e o frango fica abalado */
+function animarFalha(slot){
+  const b=document.querySelector('[data-a=feito][data-s="'+slot+'"]');if(!b||RM)return;
+  const r=b.getBoundingClientRect(),cores=["#F0624A","#8a867d","#5a3a3a","#c9575f"];
+  for(let k=0;k<10;k++){const f=document.createElement("i");f.className="caco";
+    f.style.cssText="left:"+(r.left+r.width*(.15+Math.random()*.7))+"px;top:"+(r.top+r.height*.6)+"px;background:"+cores[k%cores.length]+";--dx:"+((Math.random()-.5)*50).toFixed(1)+"px;--dy:"+(40+Math.random()*50).toFixed(1)+"px;--r:"+(Math.random()*360|0)+"deg";
+    document.body.appendChild(f);setTimeout(()=>f.remove(),900)}
+  const sec=b.closest(".ex");if(sec){sec.classList.remove("falhou-anim");void sec.offsetWidth;sec.classList.add("falhou-anim");
+    const av=sec.querySelector(".av");if(av){av.classList.remove("abalado");void av.offsetWidth;av.classList.add("abalado")}}
+}
 function faiscas(el,n,cores,dist){
   if(RM||!el)return;
   const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -978,6 +995,7 @@ function posRender(mesma){
     if(U.tela==="evolucao")contar();
   }
   const fx=U.fx;U.fx=null;
+  if(fx&&fx.falha&&U.tela==="treino")animarFalha(fx.slot);
   if(fx&&fx.novo&&U.tela==="treino"){
     const b=document.querySelector(fx.i==="all"?'[data-a=feito][data-s="'+fx.slot+'"]':'[data-a=set][data-s="'+fx.slot+'"][data-i="'+fx.i+'"]');
     faiscas(b,9,U.dia===hoje()?["#FFC83D","#fff3c4"]:["#7EC8E3","#d9f1fa"],34);
