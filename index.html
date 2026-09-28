@@ -342,8 +342,8 @@ const EX=[
   {k:"pinca",   nome:"Pinch",       curto:"Pinch",     proto:"3 × 8 puxadas por mão",                      lev:true,  maos:true,  ini:0,  cor:"#6B5A22"}
 ];
 const CORTES={maxhang:[115,125,145], resist:[105,115,125], edge:[20,35,50], barra:[105,115,125], pinca:[15,25,35]};
-const FASES=["Franguinho","Frango","Frango forte","Frango máquina"];
-const FASES_CURTO=["Franguinho","Frango","Forte","Máquina"];
+const FASES=["Franguinho","Frango","Frangão","Máquina"];
+const FASES_CURTO=FASES;
 const DEDO_NOME={polegar:"Polegar",indicador:"Indicador",medio:"Médio",anelar:"Anelar",minimo:"Mínimo"};
 const SEG_NOME={distal:"Distal",dip:"DIP",media:"Média",pip:"PIP",proximal:"Proximal",ip:"IP",mcp:"MCP"};
 const ARTIC={dip:1,pip:1,ip:1,mcp:1};
@@ -879,7 +879,7 @@ function telaAjustes(){
   const p=pesoAtual();
   let h='<header class="topo"><div><h1>Ajustes</h1></div></header>';
   h+='<section class="aj"><h2>Cortes das fases</h2><p>Em % do peso corporal. Nos exercícios pendurados conta peso + carga; nos de levantar do chão, só a carga.</p>'+
-    '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Forte</th><th>Máquina</th></tr></thead><tbody>';
+    '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Frangão</th><th>Máquina</th></tr></thead><tbody>';
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
   h+='</tbody></table><div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos valores sugeridos</button></div></section>';
   h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><p style="margin-top:6px;color:var(--ink3)">'+(D.ultimoBackup?"Último backup: "+dm(D.ultimoBackup)+"/"+D.ultimoBackup.slice(0,4):"Nenhum backup ainda")+'</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
