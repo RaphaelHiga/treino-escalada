@@ -185,8 +185,15 @@ button.pill{cursor:pointer}
 .seq-dias i.f{background:var(--gema);color:var(--gema-ink)}
 .seq-dias i.e{background:var(--ink2);color:#000}
 .seq-dias i{position:relative}
-.eng{width:44px;height:44px;border-radius:50%;background:var(--s1);display:grid;place-items:center;color:var(--ink2)}
-.eng svg{width:24px;height:24px}
+.eng{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 10px;border-radius:999px;background:var(--s2);color:var(--gema);font-weight:700;font-size:14px;box-shadow:inset 0 0 0 1.5px var(--gema)}
+.eng svg{width:22px;height:22px}
+.mes-nav{display:flex;align-items:center;gap:10px;margin-top:8px}
+.mes-bt{width:44px;height:44px;border-radius:50%;background:var(--s1);font-size:24px;line-height:1;color:var(--ink);display:grid;place-items:center}
+.mes-bt:disabled{opacity:.25}
+.mes-nav .mes-t{flex:1;text-align:center;font-weight:700;font-size:17px;color:var(--ink)}
+.mes-chips{display:flex;gap:8px;margin-top:10px;padding-bottom:2px}
+.mes-chip{flex:none;height:32px;padding:0 12px;border-radius:999px;background:var(--s1);color:var(--ink2);font-size:13px;font-weight:600;text-transform:capitalize}
+.mes-chip.on{background:var(--gema);color:var(--gema-ink)}
 .mes-t{min-width:120px;text-align:center}
 .ag-sem,.ag-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .ag-sem{margin:14px 0 6px}.ag-sem span{text-align:center;font-size:12px;color:var(--ink3);font-weight:600}
@@ -1019,16 +1026,18 @@ document.addEventListener("focusin",ev=>{
 });
 document.addEventListener("mouseup",ev=>{if(ev.target.matches&&ev.target.matches("input[data-a=carga],input[data-a=peso-val],input[data-a=corte]")&&ev.target.selectionStart===ev.target.selectionEnd)ev.preventDefault()},true);
 /* deslizar o dedo para o lado troca de aba */
-const ABAS=["evolucao","treino","agenda"];
+const ABAS=["agenda","treino","evolucao"];
 let toque=null;
 document.addEventListener("touchstart",ev=>{
   const t=ev.touches[0];
   if(ev.touches.length!==1||U.folha||U.fila.length||ev.target.closest(".rolagem-x,input,.mao-svg,.stp,nav")){toque=null;return}
-  toque={x:t.clientX,y:t.clientY,t:Date.now()};
+  toque={x:t.clientX,y:t.clientY,t:Date.now(),mes:!!ev.target.closest(".ag-grade,.ag-sem")};
 },{passive:true});
 document.addEventListener("touchend",ev=>{
-  if(!toque)return;const t=ev.changedTouches[0],dx=t.clientX-toque.x,dy=t.clientY-toque.y,dt_=Date.now()-toque.t;toque=null;
-  if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt_>700)return;
+  if(!toque)return;const t=ev.changedTouches[0],dx=t.clientX-toque.x,dy=t.clientY-toque.y,dt_=Date.now()-toque.t,tq=toque;toque=null;
+  const mesT=tq.mes;
+  if(Math.abs(dx)<(mesT?50:70)||Math.abs(dx)<Math.abs(dy)*1.8||dt_>700)return;
+  if(mesT&&U.tela==="agenda"){const b=document.querySelector('[data-a="mes"][data-v="'+(dx<0?1:-1)+'"]');if(b&&!b.disabled)b.click();return}
   if(ABAS.indexOf(U.tela)<0)return;
   const i=ABAS.indexOf(U.tela)+(dx<0?1:-1);if(i<0||i>=ABAS.length)return;
   U.tela=ABAS[i];U.folha=null;U.card=null;U.modo=null;if(U.tela==="treino")U.dia=hoje();render();
@@ -1198,7 +1207,7 @@ function resumoSessoes(ds){
   return n+(n>1?" sessões":" sessão")+(nf?' · <span class="fal">'+nf+(nf>1?" falhas":" falha")+'</span>':"")+(nd?" · "+nd+(nd>1?" descansos":" descanso"):"");
 }
 function telaEvolucao(){
-  let h='<header class="topo"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div><div class="pills"><button class="eng" data-a="tela" data-v="ajustes" aria-label="Ajustes">'+ICONES.ajustes+'</button></div></header>';
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div><div class="pills"><button class="eng" data-a="tela" data-v="ajustes" aria-label="Ajustes">'+ICONES.ajustes+'Ajustes</button></div></header>';
   h+=U.card?'<button class="voltar" data-a="card" data-v="">‹ Todos os exercícios</button>':'<div class="gal">';
   if(!U.card)EX.forEach(e=>{const st=estadoAve(e);
     h+='<button data-a="card" data-v="'+e.k+'">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur})+'<b>'+e.curto+'</b>'+(()=>{const r=melhorRel(e,somaDias(hoje(),-JANELA)).rel;return r!==null?'<i class="gal-p">'+pct(r)+'</i>':""})()+'<span>'+(st.fase===null?"Sem teste":FASES_CURTO[st.fase])+'</span></button>'});
@@ -1258,8 +1267,14 @@ function classeDia(d){
 function telaAgenda(){
   const mes=U.mes||hoje().slice(0,7),[a,m]=mes.split("-").map(Number),ini=mes+"-01";
   const nDias=new Date(a,m,0).getDate(),vazio=dt(ini).getDay(),atual=mes===hoje().slice(0,7);
-  let h='<header class="topo"><div><h1>Agenda</h1><div class="dia"><button data-a="mes" data-v="-1" aria-label="Mês anterior">‹</button><span class="mes-t">'+MESES[m-1].charAt(0).toUpperCase()+MESES[m-1].slice(1)+' de '+a+'</span>'+
-    '<button data-a="mes" data-v="1" aria-label="Próximo mês"'+(atual?" disabled":"")+'>›</button>'+(atual?"":'<button class="hoje" data-a="mes" data-v="0">Mês atual</button>')+'</div></div></header>';
+  const nomeMes=(k,curto)=>{const q=k.split("-").map(Number),n=MESES[q[1]-1];return (curto?n.slice(0,3):n.charAt(0).toUpperCase()+n.slice(1))+(curto?" "+String(q[0]).slice(2):" de "+q[0])};
+  const primeiro=(datas()[0]||hoje()).slice(0,7),meses=[];
+  for(let k=hoje().slice(0,7);;){meses.push(k);if(k<=primeiro||meses.length>=36)break;const q=k.split("-").map(Number),x=new Date(q[0],q[1]-2,1);k=x.getFullYear()+"-"+pad(x.getMonth()+1)}
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div style="flex:1"><h1>Histórico</h1>'+
+    '<div class="mes-nav"><button class="mes-bt" data-a="mes" data-v="-1" aria-label="Mês anterior"'+(mes<=primeiro?" disabled":"")+'>‹</button><span class="mes-t">'+nomeMes(mes)+'</span>'+
+    '<button class="mes-bt" data-a="mes" data-v="1" aria-label="Próximo mês"'+(atual?" disabled":"")+'>›</button></div>'+
+    (meses.length>1?'<div class="mes-chips rolagem-x" id="mes-chips">'+meses.slice().reverse().map(k=>'<button class="mes-chip'+(k===mes?" on":"")+'" data-a="mes-ir" data-v="'+k+'">'+nomeMes(k,true)+'</button>').join("")+'</div>':"")+
+    '</div></header>';
   let tr=0,de=0,fa=0,grade='<div class="ag-sem">'+"DSTQQSS".split("").map(x=>'<span>'+x+'</span>').join("")+'</div><div class="ag-grade">';
   for(let k=0;k<vazio;k++)grade+='<span></span>';
   for(let n=1;n<=nDias;n++){const d=mes+"-"+pad(n),s=D.sessoes[d];
@@ -1308,7 +1323,7 @@ function folhaDia(d){
 }
 function telaAjustes(){
   const p=pesoAtual();
-  let h='<button class="voltar" data-a="tela" data-v="evolucao">‹ Evolução</button><header class="topo"><div><h1>Ajustes</h1></div></header>';
+  let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><button class="voltar" data-a="tela" data-v="evolucao">‹ Evolução</button><h1>Ajustes</h1></div></header>';
   h+='<section class="aj"><h2>Cortes das fases</h2><p>Em % do peso corporal. Nos exercícios pendurados conta peso + carga; nos de levantar do chão, só a carga.</p>'+
     '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Frangão</th><th>Máquina</th></tr></thead><tbody>';
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
@@ -1486,7 +1501,7 @@ function render(){
   document.querySelectorAll('.rolagem-x[id],.rolagem-y').forEach((el,i)=>{rol[el.id||('y'+i)]=[el.scrollLeft,el.scrollTop]});
   $("#app").className="app"+(U.tela==="treino"&&U.dia!==hoje()?" retro":"");
   $("#app").innerHTML=U.tela==="treino"?telaTreino():U.tela==="evolucao"?telaEvolucao():U.tela==="agenda"?telaAgenda():telaAjustes();
-  $("#nav").innerHTML=[["evolucao","Evolução"],["treino","Treino"],["agenda","Agenda"]].map(t=>'<button data-a="tela" data-v="'+t[0]+'"'+(t[0]==="treino"?' class="centro"':"")+(U.tela===t[0]?' aria-current="page"':"")+'>'+ICONES[t[0]]+t[1]+'</button>').join("");
+  $("#nav").innerHTML=[["agenda","Histórico"],["treino","Treino"],["evolucao","Evolução"]].map(t=>'<button data-a="tela" data-v="'+t[0]+'"'+(t[0]==="treino"?' class="centro"':"")+(U.tela===t[0]?' aria-current="page"':"")+'>'+ICONES[t[0]]+t[1]+'</button>').join("");
   const sy=U.folha&&document.querySelector(".folha")?document.querySelector(".folha").scrollTop:0;
   $("#camada").className=U.tela==="treino"&&U.dia!==hoje()?"retro":"";
   $("#camada").innerHTML=folha();U.abre=false;
@@ -1544,6 +1559,7 @@ document.addEventListener("click",ev=>{
     case "expandir":U.abertos[v]=true;render();break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;render();break;
+    case "mes-ir":U.mes=v===hoje().slice(0,7)?null:v;render();break;
     case "mes":{const [a,m]=(U.mes||hoje().slice(0,7)).split("-").map(Number);if(v==="0"){U.mes=null}else{const x=new Date(a,m-1+ +v,1);const k=x.getFullYear()+"-"+pad(x.getMonth()+1);if(k<=hoje().slice(0,7))U.mes=k}render();break}
     case "diaag":U.diaAg=v;U.folha="dia";U.abre=true;render();break;
     case "seqinfo":U.folha="seq";U.abre=true;render();break;
