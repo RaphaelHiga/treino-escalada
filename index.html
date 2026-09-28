@@ -210,6 +210,29 @@ button.pill{cursor:pointer}
 .ag-leg span{display:inline-flex;align-items:center;gap:5px}
 .ag-leg .cab{width:18px;height:18px;flex:none}
 .ag-leg .f .cab{color:var(--gema)}.ag-leg .e .cab{color:var(--ink2)}
+.conq-grade{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;margin-top:10px}
+.conq{display:grid;justify-items:center;align-content:start;gap:13px;text-align:center;color:var(--ink)}
+.conq-n{font-size:11px;line-height:1.2;font-weight:600;color:var(--ink2)}
+.conq.off .conq-n{color:var(--ink3)}
+.conq-bar{display:block;width:52px;height:4px;border-radius:2px;background:var(--s2);overflow:hidden}
+.conq-bar i{display:block;height:100%;background:var(--gema);border-radius:2px}
+.conq-bar.g{width:180px;height:6px;margin:0 auto 14px}
+.med{position:relative;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe7a3,var(--gema) 55%,#d69a17);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--gema);color:#8a5a00}
+.med .cab{position:absolute;left:18%;top:10%;width:64%;height:64%;opacity:.35}
+.med em{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);white-space:nowrap;font-style:normal;font-weight:800;font-size:10px;letter-spacing:.02em;padding:2px 7px;border-radius:999px;background:#E84855;color:#fff;box-shadow:0 0 0 2px var(--bg)}
+.med.off{background:var(--s1);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--line);color:var(--ink3)}
+.med.off .cab{opacity:.25}
+.med.off em{background:var(--s2);color:var(--ink3)}
+.med .cad{position:absolute;right:-2px;top:-2px;width:22px;height:22px;border-radius:50%;background:var(--s2);color:var(--ink3);display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
+.med .cad svg{width:12px;height:12px}
+.med.g{width:120px;height:120px}
+.med.g em{font-size:15px;padding:3px 12px;bottom:-10px}
+.med.g .cad{width:34px;height:34px}.med.g .cad svg{width:18px;height:18px}
+.conq-folha{text-align:center}
+.conq-folha .med{margin:8px auto 22px}
+.conq-st{font-weight:700;color:var(--ink2);margin:10px 0 8px}
+.conq-st.ok{color:var(--gema)}
+.med-cel{padding:10px 0 14px}.med-cel .med{animation:carimbo .6s cubic-bezier(.3,1.8,.5,1)}
 .hist-tit{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .ag-dia.x::after{content:"";position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
 .ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
@@ -564,6 +587,8 @@ function normalizar(d){
   EX.forEach(e=>{const c=n.cortes[e.k];if(!Array.isArray(c)||c.length!==3||c.some(x=>num(x)===null))n.cortes[e.k]=CORTES[e.k].slice()});
   n.fases=d.fases||{}; n.carga=d.carga||{};
   n.ultimoBackup=/^\d{4}-\d{2}-\d{2}$/.test(d.ultimoBackup)?d.ultimoBackup:null;
+  if(d.conq&&typeof d.conq==="object")n.conq=d.conq;
+  if(Array.isArray(d.vistos))n.vistos=d.vistos;
   return n;
 }
 function migrarV2(d,v2){
@@ -590,7 +615,7 @@ function carregar(){
   gravar(d);
   return d;
 }
-function gravar(d){try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
+function gravar(d){gravar.v=(gravar.v||0)+1;try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
 function sessao(d,dia,criar){
   if(!d.sessoes[dia]&&criar)d.sessoes[dia]={s:{},esforco:null,dor:null};
   return d.sessoes[dia]||null;
@@ -1302,8 +1327,127 @@ function telaAgenda(){
   grade+='</div>';
   h+='<p class="sec-sub">'+tr+(tr===1?" dia":" dias")+' com treino · '+de+' de descanso'+(fa?' · <span class="fal">'+fa+(fa===1?" falha":" falhas")+'</span>':"")+'</p>'+grade+
     '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span></div>'+
-    '<p class="dica" style="margin-top:14px;text-align:center">Toque num dia para ver tudo o que foi registrado.</p>';
+    '<p class="dica" style="margin-top:14px;text-align:center">Toque num dia para ver tudo o que foi registrado.</p>'+secaoConquistas();
   return h;
+}
+/* ================= conquistas =================
+   Tudo é calculado a partir do histórico. A data de cada conquista fica guardada em D.conq
+   (uma vez conquistada, não se perde). s:1 = conquista surpresa: bloqueada aparece como "???". */
+const CONQ=[
+  {k:"primeiro",n:"Primeiro passo",r:"1º",d:"Registrou o primeiro treino."},
+  {k:"seq7",n:"Semana de fogo",r:"7 dias",d:"7 dias seguidos com treino."},
+  {k:"seq15",n:"Quinzena quente",r:"15 dias",d:"15 dias seguidos com treino."},
+  {k:"seq30",n:"Mês em chamas",r:"30 dias",d:"30 dias seguidos com treino."},
+  {k:"mes12",n:"Mês completo",r:"12/mês",d:"12 dias com treino no mesmo mês."},
+  {k:"vet50",n:"Veterano",r:"50",d:"50 dias com treino no total."},
+  {k:"vet100",n:"Veterano de guerra",r:"100",d:"100 dias com treino no total."},
+  {k:"vet200",n:"Lenda da granja",r:"200",d:"200 dias com treino no total."},
+  {k:"fds",n:"Fim de semana ativo",r:"sáb+dom",d:"Treinou sábado e domingo em 4 fins de semana."},
+  {k:"perfeito",n:"Dia perfeito",r:"5/5",d:"Os 5 exercícios feitos no mesmo dia, sem nenhuma falha."},
+  {k:"completo",n:"Completo",r:"todos",d:"Fez cada um dos 5 exercícios pelo menos uma vez."},
+  {k:"recorde",n:"Recorde quebrado",r:"recorde",d:"Bateu a sua melhor carga num exercício."},
+  {k:"recorde10",n:"Colecionador de recordes",r:"10",d:"10 recordes de carga somando todos os exercícios."},
+  {k:"maquina",n:"Frango máquina",r:"máquina",d:"Chegou à fase Máquina num exercício."},
+  {k:"maquinas",n:"Granja de máquinas",r:"5 máq.",d:"Chegou à fase Máquina nos 5 exercícios."},
+  {k:"h10",n:"Maratonista",r:"10h",d:"10 horas de escalada somadas."},
+  {k:"h50",n:"Ultramaratonista",r:"50h",d:"50 horas de escalada somadas."},
+  {k:"h100",n:"Morador da parede",r:"100h",d:"100 horas de escalada somadas."},
+  {k:"longa",n:"Sessão longa",r:"2h+",d:"Uma escalada de 2 horas ou mais."},
+  {k:"intensa",n:"Apertei e me passei",r:"intensa",d:"Uma escalada de intensidade intensa."},
+  {k:"descanso4",n:"Descanso consciente",r:"4 sem.",d:"Treinou e descansou pelo menos 1 dia em cada semana, por 4 semanas seguidas."},
+  {k:"semdor",n:"Dedos de aço",r:"20",d:"20 dias de treino registrados sem dor."},
+  {k:"superacao",n:"Superação",r:"virada",d:"Falhou num exercício e depois voltou e fez."},
+  {k:"volta",n:"De volta à ativa",r:"14 dias",d:"Voltou a treinar depois de 14 dias parado."},
+  {k:"backup",n:"Precavido",r:"backup",d:"Fez o primeiro backup."},
+  {k:"balanca",n:"Na balança",r:"4 sem.",d:"Registrou o peso em 4 semanas seguidas."},
+  {k:"sofa",n:"Frango de sofá",r:"zzz",d:"3 dias seguidos de descanso. O sofá agradece.",s:1},
+  {k:"hiberna",n:"Hibernação",r:"urso",d:"10 dias sem treinar. O frango virou urso.",s:1},
+  {k:"ressuscitou",n:"Ressuscitou",r:"vivo!",d:"Voltou a treinar depois de hibernar.",s:1},
+  {k:"soesc",n:"Só vim pela escalada",r:"parede",d:"5 dias só de escalada, sem fortalecimento.",s:1},
+  {k:"ginasio",n:"Morando no ginásio",r:"3h+",d:"Uma escalada de 3 horas ou mais. Já pode pagar aluguel.",s:1},
+  {k:"passeio",n:"Passeio no parque",r:"leve",d:"Uma escalada leve de 30 minutos. Mais conversa que escalada.",s:1},
+  {k:"dieta",n:"Frango de dieta",r:"dieta",d:"Registrou o peso 5 vezes.",s:1},
+  {k:"curioso",n:"Frango curioso",r:"ⓘ",d:"Leu a explicação dos 5 exercícios.",s:1}
+];
+/* estado de cada conquista: {data} quando já batida e {p:[atual,meta]} para o progresso */
+function calcConquistas(){
+  const R={},ok=(k,data)=>{if(!R[k])R[k]={};if(!R[k].data&&data)R[k].data=data},pr=(k,a,m)=>{if(!R[k])R[k]={};R[k].p=[Math.min(a,m),m]};
+  const ds=datas(),ss=D.sessoes,h=hoje();
+  /* linha do tempo dia a dia desde o primeiro registro: T treino, R descanso */
+  const dias=[];if(ds.length)for(let d=ds[0];d<=h;d=somaDias(d,1))dias.push({d:d,t:treinou(ss[d]),r:descansou(d)});
+  let run=0,best=0,rr=0,ant=null,nt=0,noMes={},mesMax=0,fds=0,semDor=0,soEsc=0,min=0,rec=0,melhor={},falhou={},feitoEx={},perf=0;
+  dias.forEach((x,i)=>{
+    const s=ss[x.d];
+    if(x.t){
+      run++;if(run>best)best=run;[7,15,30].forEach(n=>{if(run>=n)ok("seq"+n,x.d)});
+      if(rr>=10)ok("ressuscitou",x.d);if(ant&&diasEntre(ant,x.d)-1>=14)ok("volta",x.d);
+      rr=0;ant=x.d;nt++;ok("primeiro",x.d);[50,100,200].forEach(n=>{if(nt>=n)ok("vet"+n,x.d)});
+      const m=x.d.slice(0,7);noMes[m]=(noMes[m]||0)+1;mesMax=Math.max(mesMax,noMes[m]);if(noMes[m]>=12)ok("mes12",x.d);
+      if(dt(x.d).getDay()===0&&i>0&&dias[i-1].t){fds++;if(fds>=4)ok("fds",x.d)}
+      if(s.escalada!==undefined&&!s.dor){semDor++;if(semDor>=20)ok("semdor",x.d)}
+      if(s.escalada&&!temSeries(s)){soEsc++;if(soEsc>=5)ok("soesc",x.d)}
+    }else{run=0;if(x.r){rr++;if(rr>=3)ok("sofa",x.d);if(rr>=10)ok("hiberna",x.d)}}
+    if(s&&s.escalada){min+=s.escalada.min;[10,50,100].forEach(n=>{if(min>=n*60)ok("h"+n,x.d)});
+      if(s.escalada.min>=120)ok("longa",x.d);if(s.escalada.min>=180)ok("ginasio",x.d);
+      if(s.escalada.int==="intensa")ok("intensa",x.d);if(s.escalada.int==="leve"&&s.escalada.min<=30)ok("passeio",x.d)}
+    if(s&&temSeries(s)){let n=0;
+      EX.forEach(e=>{const sl=slotsDe(e),fez=sl.every(q=>nota(s,q)!==null);
+        if(fez){n++;feitoEx[e.k]=1;if(falhou[e.k])ok("superacao",x.d)}
+        if(falhouEx(s,e))falhou[e.k]=1;
+        sl.forEach(q=>{const v=nota(s,q);if(v===null)return;if(melhor[q]!==undefined&&v>melhor[q]){rec++;ok("recorde",x.d);if(rec>=10)ok("recorde10",x.d)}if(melhor[q]===undefined||v>melhor[q])melhor[q]=v})});
+      perf=Math.max(perf,n);if(n===5)ok("perfeito",x.d);if(Object.keys(feitoEx).length===5)ok("completo",x.d)}
+  });
+  /* semanas (domingo a sábado) com treino e descanso, e semanas com peso */
+  const semana=d=>somaDias(d,-dt(d).getDay());
+  {let seg=0,top=0,sem=null,t=0,r=0,quando=null;
+    const fecha=()=>{if(sem===null)return;if(t&&r){seg++;top=Math.max(top,seg);if(seg>=4)ok("descanso4",quando)}else if(sem!==semana(h))seg=0};
+    dias.forEach(x=>{const w=semana(x.d);if(w!==sem){fecha();sem=w;t=0;r=0}if(x.t)t++;if(x.r)r++;if(t&&r&&!quando)quando=x.d;if(!(t&&r))quando=null});
+    fecha();pr("descanso4",top,4)}
+  {let seg=0,top=0,ult=null;D.pesos.forEach(p=>{const w=semana(p.data);if(w===ult)return;seg=ult&&somaDias(ult,7)===w?seg+1:1;ult=w;top=Math.max(top,seg);if(seg>=4)ok("balanca",p.data)});pr("balanca",top,4)}
+  if(D.pesos.length>=5)ok("dieta",D.pesos[4].data);
+  if(D.ultimoBackup)ok("backup",D.ultimoBackup);
+  const vis=(D.vistos||[]).filter(k=>INFO[k]).length;if(vis>=5)ok("curioso",h);
+  const fases=EX.map(e=>faseAtual(e)||0),nMaq=fases.filter(f=>f===3).length;
+  if(nMaq)ok("maquina",h);if(nMaq===5)ok("maquinas",h);
+  pr("seq7",best,7);pr("seq15",best,15);pr("seq30",best,30);pr("mes12",mesMax,12);
+  [50,100,200].forEach(n=>pr("vet"+n,nt,n));pr("fds",fds,4);pr("perfeito",perf,5);pr("completo",Object.keys(feitoEx).length,5);
+  pr("recorde10",rec,10);pr("maquina",Math.max.apply(null,fases),3);pr("maquinas",nMaq,5);
+  [10,50,100].forEach(n=>pr("h"+n,Math.floor(min/60),n));pr("semdor",semDor,20);
+  pr("soesc",soEsc,5);pr("dieta",D.pesos.length,5);pr("curioso",vis,5);
+  return R;
+}
+/* guarda as novas conquistas e põe na fila de comemoração.
+   Na primeira vez (ou depois de importar um backup sem conquistas) guarda tudo sem comemorar. */
+function checarConquistas(){
+  const R=calcConquistas(),primeira=!D.conq;let mudou=primeira;
+  if(primeira)D.conq={};
+  CONQ.forEach(c=>{const r=R[c.k];if(!r||!r.data||D.conq[c.k])return;D.conq[c.k]=r.data;mudou=true;if(!primeira)U.fila.push({tipo:"conquista",id:c.k})});
+  if(mudou)gravar();
+  return R;
+}
+function medalha(c,grande){
+  const tem=!!(D.conq&&D.conq[c.k]),seg=c.s&&!tem;
+  return '<span class="med'+(tem?"":" off")+(grande?" g":"")+'">'+SELO+'<em>'+esc(seg?"???":c.r)+'</em>'+(tem?"":'<i class="cad">'+ICONES.cadeado+'</i>')+'</span>';
+}
+function secaoConquistas(){
+  const R=calcConquistas(),tem=c=>!!(D.conq&&D.conq[c.k]);
+  const lista=CONQ.filter(tem).sort((a,b)=>D.conq[a.k]<D.conq[b.k]?1:-1).concat(CONQ.filter(c=>!tem(c)));
+  const n=CONQ.filter(tem).length;
+  return '<h3 class="sec-t">Conquistas</h3><p class="sec-sub">'+n+' de '+CONQ.length+' desbloqueadas</p><div class="conq-grade">'+
+    lista.map(c=>{const r=R[c.k]||{},seg=c.s&&!tem(c),p=!tem(c)&&!seg&&r.p&&r.p[0]>0?r.p:null;
+      return '<button class="conq'+(tem(c)?"":" off")+'" data-a="conq" data-v="'+c.k+'" aria-label="'+esc(seg?"Conquista surpresa":c.n)+'">'+medalha(c)+
+        '<span class="conq-n">'+esc(seg?"Surpresa":c.n)+'</span>'+(p?'<span class="conq-bar"><i style="width:'+Math.round(p[0]/p[1]*100)+'%"></i></span>':"")+'</button>'}).join("")+'</div>';
+}
+function folhaConq(k){
+  const c=CONQ.find(x=>x.k===k);if(!c)return "";
+  const tem=!!(D.conq&&D.conq[k]),seg=c.s&&!tem,r=calcConquistas()[k]||{};
+  const quando=tem?dt(D.conq[k]).toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"}):"";
+  const st=tem?'<p class="conq-st ok">Conquistada em '+esc(quando)+'</p>':
+    seg?'<p class="conq-st">É surpresa! Continue usando o app para descobrir.</p>':
+    r.p?'<p class="conq-st">Progresso: '+r.p[0]+' de '+r.p[1]+'</p><span class="conq-bar g"><i style="width:'+Math.round(r.p[0]/r.p[1]*100)+'%"></i></span>':'<p class="conq-st">Ainda bloqueada.</p>';
+  return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha conq-folha" role="dialog" aria-modal="true" aria-labelledby="f-t">'+medalha(c,true)+
+    '<h2 id="f-t">'+esc(seg?"Conquista surpresa":c.n)+'</h2>'+(seg?"":'<p class="sub">'+esc(c.d)+'</p>')+st+
+    '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
 }
 /* eventos de um dia, na mesma ordem das perguntas do registro */
 function eventosDoDia(d){
@@ -1436,6 +1580,7 @@ function folha(){
       '<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Ficar</button><button class="btn" data-a="sair-ok">Sair</button></div></div></div>';
   }
   if(U.folha==="dia"&&U.diaAg)return folhaDia(U.diaAg);
+  if(U.folha==="conq")return folhaConq(U.conq);
   if(U.folha==="info"&&INFO[U.info]){
     const e=EX.find(x=>x.k===U.info),i=Object.assign({cuid:CUIDADOS[e.k]||""},INFO[e.k]);
     const lin=(t,x)=>'<li><b>'+t+'</b>'+esc(x)+'</li>';
@@ -1466,6 +1611,7 @@ function dadosCena(ev){
   else if(ev.tipo==="forca"){tit="Mais forte";txt=ev.texto;arte=ave(e,{fase:st.fase,flex:true,cur:st.cur});cls="festa";extra='<span class="flutua">+'+nf1.format(ev.ganho)+'%</span>'}
   else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida no "+e.nome+": "+D.cortes[e.k][ev.para-1]+"% do peso. Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
   else if(ev.tipo==="regrediu"){const u=ultimoTreino(e);tit="Enferrujou";txt=(u?"Parado há "+diasEntre(u,hoje())+" dias no "+e.nome+", o frango":"O frango do "+e.nome)+" voltou para "+FASES[ev.para]+". Bata o corte de novo para ele subir.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
+  else if(ev.tipo==="conquista"){const c=CONQ.find(x=>x.k===ev.id);tit="Conquista!";txt=c.n+": "+c.d;arte='<div class="med-cel">'+medalha(c,true)+'</div>';extra=confete()}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit=["Dedinho sensível","Dedo reclamando","Dedo em greve"][Math.min(3,ev.nivel)-1];txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
@@ -1487,7 +1633,7 @@ function celebracao(){
   const ev=U.fila[0];if(!ev)return "";
   const c=dadosCena(ev),arte=c.arte,tit=c.tit,txt=c.txt,extra=c.extra,cls=c.cls;
   return '<div class="cel" data-a="cel" role="dialog" aria-modal="true" aria-labelledby="cel-t">'+extra+'<div class="cel-box">'+
-    (ev.tipo==="sequencia"?arte:'<div class="msc-g '+cls+'" data-evo="'+(ev.tipo==="evoluiu"?ev.para:"")+'">'+arte+'</div>')+
+    (ev.tipo==="sequencia"||ev.tipo==="conquista"?arte:'<div class="msc-g '+cls+'" data-evo="'+(ev.tipo==="evoluiu"?ev.para:"")+'">'+arte+'</div>')+
     '<h2 id="cel-t">'+tit+'</h2><p>'+esc(txt)+'</p><button class="btn" data-a="cel">Continuar</button></div></div>';
 }
 function animarEvolucao(){
@@ -1507,6 +1653,7 @@ const ICONES={
   agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v4M16 3.5v4"/><circle cx="8.2" cy="14" r=".9" fill="currentColor"/><circle cx="12" cy="14" r=".9" fill="currentColor"/><circle cx="15.8" cy="14" r=".9" fill="currentColor"/><circle cx="8.2" cy="17.3" r=".9" fill="currentColor"/><circle cx="12" cy="17.3" r=".9" fill="currentColor"/></svg>',
   evolucao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16.5l4-3.5 3 2.5 4.2-4.7"/><circle cx="17.5" cy="8.5" r="3"/><path d="M15.85 5.95c-.6-1.8 1.05-2.25 1.5-.9.36-1.35 1.8-1.2 1.65.45"/><path d="M20.5 8.2l1.8.6-1.8.6"/></svg>',
   ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5.5M13.5 7H21M3 17h11.5M19.5 17H21"/><circle cx="11" cy="7" r="2.4"/><path d="M9.68 4.96c-0.48 -1.44 0.84 -1.8 1.2 -0.72c0.29 -1.08 1.44 -0.96 1.32 0.36"/><path d="M13.4 6.76l1.44 0.48 -1.44 0.48"/><circle cx="17" cy="17" r="2.4"/><path d="M15.68 14.96c-0.48 -1.44 0.84 -1.8 1.2 -0.72c0.29 -1.08 1.44 -0.96 1.32 0.36"/><path d="M19.4 16.76l1.44 0.48 -1.44 0.48"/></svg>',
+  cadeado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>'
 };
 function selPop(a,v){
@@ -1516,6 +1663,8 @@ function selPop(a,v){
   if(navigator.vibrate)try{navigator.vibrate(8)}catch(x){}
 }
 function render(){
+  /* dados mudaram: vê se alguma conquista nova foi batida */
+  if(render.v!==gravar.v){checarConquistas();render.v=gravar.v}
   const y=window.scrollY,mesmaTela=render.ultima===U.tela,rol={};
   document.querySelectorAll('.rolagem-x[id],.rolagem-y').forEach((el,i)=>{rol[el.id||('y'+i)]=[el.scrollLeft,el.scrollTop]});
   $("#app").className="app"+(U.tela==="treino"&&U.dia!==hoje()?" retro":"");
@@ -1578,7 +1727,8 @@ document.addEventListener("click",ev=>{
     case "expandir":U.abertos[v]=true;clearTimeout(U.tRec);render();break;
     case "recolher":delete U.abertos[v];U.recolheu=v;render();U.recolheu=null;break;
     case "card":U.card=v||null;render.ultima=null;render();break;
-    case "info":U.info=v;U.folha="info";U.abre=true;render();break;
+    case "info":U.info=v;U.folha="info";U.abre=true;D.vistos=D.vistos||[];if(D.vistos.indexOf(v)<0){D.vistos.push(v);gravar()}render();break;
+    case "conq":U.conq=v;U.folha="conq";U.abre=true;render();break;
     case "mes-ir":U.mes=v===hoje().slice(0,7)?null:v;render();break;
     case "mes":{const [a,m]=(U.mes||hoje().slice(0,7)).split("-").map(Number);if(v==="0"){U.mes=null}else{const x=new Date(a,m-1+ +v,1);const k=x.getFullYear()+"-"+pad(x.getMonth()+1);if(k<=hoje().slice(0,7))U.mes=k}render();break}
     case "diaag":U.diaAg=v;U.folha="dia";U.abre=true;render();break;
