@@ -142,6 +142,20 @@ p{margin:0}
 .lista .esf{font-weight:600;font-variant-numeric:tabular-nums}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:1px}
 .sec-t{font-size:28px;margin:26px 0 4px}
+.sec-linha{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 4px}
+.sec-linha .sec-t{margin:0}
+.add-bt{width:40px;height:40px;border-radius:50%;background:var(--s1);display:grid;place-items:center;font-size:24px;line-height:1;color:var(--ink)}
+.data-in{display:block;width:100%;height:52px;border:0;border-radius:12px;background:var(--s2);color:var(--ink);font-size:17px;padding:0 14px;color-scheme:dark}
+button.pill{cursor:pointer}
+.seq-top{display:flex;align-items:center;gap:12px;margin:4px 0 6px}
+.seq-top svg{width:44px;height:55px}
+.seq-top b{font-family:var(--disp);font-size:64px;font-weight:400;line-height:.9}
+.seq-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.seq-dias div{display:grid;justify-items:center;gap:3px;font-size:11px;color:var(--ink3)}
+.seq-dias i{width:100%;max-width:38px;aspect-ratio:1;border-radius:10px;background:var(--s2);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:600;color:var(--ink3)}
+.seq-dias i.f{background:var(--gema);color:var(--gema-ink)}
+.seq-dias i.e{background:var(--ink2);color:#000}
+.seq-dias i.hoje{box-shadow:0 0 0 2px var(--ink)}
 .sec-sub{font-size:13px;color:var(--ink3);margin-bottom:8px}
 .estagios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .estagios div{display:grid;justify-items:center;align-content:start;gap:2px;text-align:center}
@@ -568,6 +582,11 @@ function sequencia(){
   let n=0;while(treinou(D.sessoes[d])){n++;d=somaDias(d,-1)}
   return n;
 }
+function melhorSequencia(){
+  let m=0,n=0,ant=null;
+  datas().forEach(d=>{if(!treinou(D.sessoes[d]))return;n=ant&&somaDias(ant,1)===d?n+1:1;ant=d;if(n>m)m=n});
+  return m;
+}
 function eventosSequencia(antes){
   if(U.dia!==hoje()||antes||!treinou(D.sessoes[U.dia]))return [];
   const n=sequencia();
@@ -640,6 +659,12 @@ const CENA_SOFA='<rect x="-50" y="14" width="100" height="34" rx="10" fill="#8a4
   cBraco("M-14 6 q-8 6 -6 14",-20,20)+cBraco("M15 6 q14 -2 18 -14",33,-8)+'<rect x="30" y="-24" width="7" height="16" rx="2.5" fill="#2B2B2B"/><circle cx="33.5" cy="-20" r="1.6" fill="#E84855"/>'+
   '<circle class="voa" cx="-30" cy="-30" r="3" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/><circle class="voa" style="animation-delay:.9s" cx="-40" cy="-16" r="2.6" fill="#FFE9A8" stroke="#2B2B2B" stroke-width="1"/>'+
   '<g transform="translate(0 4)">'+C_CABECA+C_SONO+C_BICO+C_BARBELA+'</g>';
+/* escalou sem fortalecer: hangboard esquecido com teia, frango assobiando de mãos no bolso */
+const CENA_SO_PAREDE='<g transform="translate(-58 -34) rotate(-8)"><rect x="-26" y="-9" width="52" height="18" rx="5" fill="#b07a4a" stroke="#2B2B2B" stroke-width="1.8"/><rect x="-20" y="-3" width="11" height="6" rx="2" fill="#6e4a2b"/><rect x="-5.5" y="-3" width="11" height="6" rx="2" fill="#6e4a2b"/><rect x="9" y="-3" width="11" height="6" rx="2" fill="#6e4a2b"/>'+
+  '<path d="M16 9 l10 14 M16 9 l2 18 M16 9 l-8 15 M4 14 q8 3 14 -2 M6 20 q9 4 17 -3" stroke="#d9d4ca" stroke-width="1" fill="none" opacity=".8"/><circle class="bob" cx="22" cy="24" r="2.4" fill="#2B2B2B"/></g>'+
+  C_PERNAS+C_CORPO+'<path d="M-15 8 q-6 12 -3 22" stroke="#2B2B2B" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M-15 8 q-6 12 -3 22" stroke="#F7F4EC" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M15 8 q6 12 3 22" stroke="#2B2B2B" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M15 8 q6 12 3 22" stroke="#F7F4EC" stroke-width="3.2" stroke-linecap="round" fill="none"/><path d="M-22 32 q4 -4 8 0 M14 32 q4 -4 8 0" stroke="#2B2B2B" stroke-width="1.6" fill="none"/>'+
+  '<g class="olha">'+C_CABECA+C_FELIZ+'<path d="M-3 -32 q3 -4 6 0 q-1 5 -3 5 q-2 0 -3 -5z" fill="#FF8C1A" stroke="#2B2B2B" stroke-width="1.6"/><circle cx="0" cy="-26" r="1.8" fill="#2B2B2B"/>'+C_BARBELA+'</g>'+
+  '<text class="nota" x="18" y="-58" font-size="16" fill="#FFC83D" font-family="Archivo,sans-serif">♪</text><text class="nota" style="animation-delay:1.2s" x="30" y="-48" font-size="13" fill="#FFC83D" font-family="Archivo,sans-serif">♫</text>';
 function cena(arte,cor){return '<svg class="msc" viewBox="66 8 248 248" aria-hidden="true"><circle cx="190" cy="132" r="118" fill="'+cor+'"/><ellipse cx="190" cy="218" rx="50" ry="7" fill="#000" opacity=".35"/><g class="ave"><g transform="translate(190 144) scale(1.35)">'+arte+'</g></g></svg>'}
 
 const FERRUGEM='<g opacity=".85"><circle cx="182" cy="160" r="5" fill="#8a4a1f"/><circle cx="201" cy="172" r="4" fill="#8a4a1f"/><circle cx="191" cy="186" r="3" fill="#8a4a1f"/><circle cx="176" cy="92" r="4" fill="#8a4a1f"/><circle cx="207" cy="80" r="3" fill="#8a4a1f"/></g><path d="M92 58 L136 58 M92 58 L92 102 M92 58 L128 94 M100 58 q0 10 -8 12 M114 58 q-2 18 -22 22 M128 58 q-4 28 -36 34" stroke="#d9d4ca" stroke-width="1.6" fill="none" opacity=".75"/><text x="248" y="96" fill="#d9d4ca" font-family="Archivo,sans-serif" font-size="18" font-weight="700" transform="rotate(12 248 96)">nhéc</text>';
@@ -746,6 +771,7 @@ function salvarSessao(){
   if(s.escalada)U.fila.push({tipo:"escalada",min:s.escalada.min,int:s.escalada.int});
   else U.fila.push({tipo:"semescalada"});
   if(forta)U.fila.push({tipo:"esforco",nota:s.esforco});
+  else if(s.escalada)U.fila.push({tipo:"semforta"});
   if(s.dor){const m=Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]));U.fila.push({tipo:"dor",nivel:m})}
   else U.fila.push({tipo:"semdor"});
   U.fila=U.fila.concat(eventosSequencia(antes));
@@ -887,7 +913,7 @@ function telaTreino(){
     '<div class="dia"><button data-a="dia" data-v="-1" aria-label="Dia anterior">‹</button><span>'+esc(dataTxt)+'</span>'+
     '<button data-a="dia" data-v="1" aria-label="Próximo dia"'+(ehHoje?" disabled":"")+'>›</button>'+
     (ehHoje?"":'<button class="hoje" data-a="hoje">Hoje</button>')+'</div></div>'+
-    '<div class="pills">'+(seq?'<span class="pill chama'+(U.chama?" pulsa":"")+'" title="Dias seguidos com treino">'+CHAMA+seq+'</span>':"")+'</div></header>';
+    '<div class="pills">'+(seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"")+'</div></header>';
   {const ub=D.ultimoBackup,dias=ub?diasEntre(ub,hoje()):null;
     if(ehHoje&&!U.avisoFechado&&datas().length>=5&&(dias===null||dias>=30))
       h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
@@ -1043,7 +1069,7 @@ function telaEvolucao(){
   h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma das notas de intensidade do fortalecimento. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
   h+=secaoPeso();
   const ds=datas().reverse();
-  h+='<h2 class="sec-t">Sessões</h2>'+(ds.length?'<p class="sec-sub">'+ds.length+(ds.length>1?' sessões':' sessão')+'</p>':'');
+  h+='<div class="sec-linha"><h2 class="sec-t">Sessões</h2><button class="add-bt" data-a="retro" aria-label="Registrar sessão de outro dia">+</button></div>'+(ds.length?'<p class="sec-sub">'+ds.length+(ds.length>1?' sessões':' sessão')+'</p>':'');
   if(!ds.length)h+='<p class="vazio">Nenhuma sessão ainda.</p>';
   else{
     h+='<div class="rolagem-y"><ul class="lista">';
@@ -1122,6 +1148,29 @@ function folha(){
     h+=(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
     return h;
   }
+  if(U.folha==="retro"){
+    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Registrar outro dia</h2>'+
+      '<p class="sub">Esqueceu de registrar? Escolha o dia e preencha como se fosse naquele dia.</p>'+
+      '<input type="date" class="data-in" id="retro-data" max="'+hoje()+'" value="'+somaDias(hoje(),-1)+'" aria-label="Dia da sessão">'+
+      (U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="retro-ok">Registrar este dia</button></div></div>';
+  }
+  if(U.folha==="seq"){
+    const n=sequencia(),hojeFeito=treinou(D.sessoes[hoje()]),melhor=melhorSequencia(),prox=MARCOS_SEQ.find(m=>m>n);
+    let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k),s=D.sessoes[d],c=temSeries(s)?"f":(s&&s.escalada)?"e":"";
+      dias+='<div><i class="'+c+(k?"":" hoje")+'">'+Number(d.slice(8))+'</i>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
+    const mes=datas().filter(d=>d>somaDias(hoje(),-30)&&treinou(D.sessoes[d])).length;
+    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Sequência</h2>'+
+      '<div class="seq-top">'+CHAMA+'<b>'+n+'</b><span>'+(n===1?"dia seguido":"dias seguidos")+'<br>com treino</span></div>'+
+      '<p class="sub">'+(hojeFeito?"Hoje já conta. Volte amanhã para manter o fogo aceso.":"Hoje ainda não conta. Registre um treino ou uma escalada para a sequência continuar.")+'</p>'+
+      '<ul class="info-lista">'+
+      '<li><b>Melhor sequência</b>'+melhor+(melhor===1?" dia":" dias")+(melhor&&melhor===n?" (é a atual!)":"")+'</li>'+
+      (prox?'<li><b>Próxima comemoração</b>'+prox+' dias. Faltam '+(prox-n)+(prox-n===1?" dia":" dias")+'.</li>':"")+
+      '<li><b>Últimos 30 dias</b>'+mes+(mes===1?" dia":" dias")+' com treino</li>'+
+      '<li><b>O que conta</b>Qualquer dia com fortalecimento ou escalada registrado.</li></ul>'+
+      '<h3 class="sec-t" style="font-size:22px;margin:18px 0 2px">Últimos 14 dias</h3><div class="seq-dias">'+dias+'</div>'+
+      '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span></div>'+
+      '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
+  }
   if(U.folha==="info"&&INFO[U.info]){
     const e=EX.find(x=>x.k===U.info),i=INFO[e.k];
     const lin=(t,x)=>'<li><b>'+t+'</b>'+esc(x)+'</li>';
@@ -1159,6 +1208,7 @@ function celebracao(){
     txt=["Fortalecimento "+ev.nota+". Treino fofinho: recuperar também é treino.","Fortalecimento "+ev.nota+". Treino honesto, cumpriu o combinado.","Fortalecimento "+ev.nota+". Capricha no descanso e na comida hoje."][n];
     arte=cena(CENA_ESF[n],["#35507a","#2F5A4A","#6E4230"][n])}
   else if(ev.tipo==="semescalada"){tit="Folga da parede";txt="Não escalou "+(U.dia===hoje()?"hoje":"neste dia")+". Descansar também faz parte.";arte=cena(CENA_SOFA,"#463C6E")}
+  else if(ev.tipo==="semforta"){tit="Hangboard de folga";txt="Sem fortalecimento "+(U.dia===hoje()?"hoje":"neste dia")+". A parede deu conta do recado.";arte=cena(CENA_SO_PAREDE,"#2E4057")}
   else if(ev.tipo==="semdor"){tit="Dedos de aço";txt="Sem dor nos dedos. Segue o jogo.";arte=cena(CENA_ACO,"#2F5A4A")}
   else if(ev.tipo==="escalada"){const n=Math.max(0,ESC_INT.findIndex(x=>x[0]===ev.int)),t=ev.min<=60?0:ev.min<=120?1:2;
     tit=["Rapidinha","Sessão cheia","Morou no ginásio"][t];
@@ -1222,6 +1272,12 @@ document.addEventListener("click",ev=>{
     case "expandir":U.abertos[v]=true;render();break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;render();break;
+    case "seqinfo":U.folha="seq";U.abre=true;render();break;
+    case "retro":U.folha="retro";U.erro="";U.abre=true;render();break;
+    case "retro-ok":{const d=($("#retro-data")||{}).value||"";
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){U.erro="Escolha um dia.";return render()}
+      if(d>hoje()){U.erro="Não dá para registrar um dia que ainda não chegou.";return render()}
+      U.erro="";U.folha=null;U.dia=d;U.tela="treino";U.card=null;render();toast("Registrando "+dm(d));break}
     case "esf":U.esf=+v;U.erro="";render();break;
     case "esc":U.escSim=v==="1";U.erro="";render();break;
     case "esc-min":U.escMin=+v;U.erro="";render();break;
