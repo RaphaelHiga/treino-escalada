@@ -142,6 +142,10 @@ p{margin:0}
 .lista .esf{font-weight:600;font-variant-numeric:tabular-nums}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:1px}
 .sec-t{font-size:28px;margin:26px 0 4px}
+.sec-linha{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 4px}
+.sec-linha .sec-t{margin:0}
+.add-bt{width:40px;height:40px;border-radius:50%;background:var(--s1);display:grid;place-items:center;font-size:24px;line-height:1;color:var(--ink)}
+.data-in{display:block;width:100%;height:52px;border:0;border-radius:12px;background:var(--s2);color:var(--ink);font-size:17px;padding:0 14px;color-scheme:dark}
 .sec-sub{font-size:13px;color:var(--ink3);margin-bottom:8px}
 .estagios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .estagios div{display:grid;justify-items:center;align-content:start;gap:2px;text-align:center}
@@ -1050,7 +1054,7 @@ function telaEvolucao(){
   h+='<h2 class="sec-t">Fortalecimento por semana</h2><p class="sec-sub">Soma das notas de intensidade do fortalecimento. Os pontos embaixo marcam semanas com dor. Arraste para o lado para ver o histórico.</p>'+graficoSemana();
   h+=secaoPeso();
   const ds=datas().reverse();
-  h+='<h2 class="sec-t">Sessões</h2>'+(ds.length?'<p class="sec-sub">'+ds.length+(ds.length>1?' sessões':' sessão')+'</p>':'');
+  h+='<div class="sec-linha"><h2 class="sec-t">Sessões</h2><button class="add-bt" data-a="retro" aria-label="Registrar sessão de outro dia">+</button></div>'+(ds.length?'<p class="sec-sub">'+ds.length+(ds.length>1?' sessões':' sessão')+'</p>':'');
   if(!ds.length)h+='<p class="vazio">Nenhuma sessão ainda.</p>';
   else{
     h+='<div class="rolagem-y"><ul class="lista">';
@@ -1128,6 +1132,29 @@ function folha(){
     h+=temSeries(D.sessoes[U.dia])?dor+escal:escal+dor;
     h+=(U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="salvar-sessao">Salvar sessão</button></div></div>';
     return h;
+  }
+  if(U.folha==="retro"){
+    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Registrar outro dia</h2>'+
+      '<p class="sub">Esqueceu de registrar? Escolha o dia e preencha como se fosse naquele dia.</p>'+
+      '<input type="date" class="data-in" id="retro-data" max="'+hoje()+'" value="'+somaDias(hoje(),-1)+'" aria-label="Dia da sessão">'+
+      (U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="retro-ok">Registrar este dia</button></div></div>';
+  }
+  if(U.folha==="seq"){
+    const n=sequencia(),hojeFeito=treinou(D.sessoes[hoje()]),melhor=melhorSequencia(),prox=MARCOS_SEQ.find(m=>m>n);
+    let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k),s=D.sessoes[d],c=temSeries(s)?"f":(s&&s.escalada)?"e":"";
+      dias+='<div><i class="'+c+(k?"":" hoje")+'">'+Number(d.slice(8))+'</i>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
+    const mes=datas().filter(d=>d>somaDias(hoje(),-30)&&treinou(D.sessoes[d])).length;
+    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Sequência</h2>'+
+      '<div class="seq-top">'+CHAMA+'<b>'+n+'</b><span>'+(n===1?"dia seguido":"dias seguidos")+'<br>com treino</span></div>'+
+      '<p class="sub">'+(hojeFeito?"Hoje já conta. Volte amanhã para manter o fogo aceso.":"Hoje ainda não conta. Registre um treino ou uma escalada para a sequência continuar.")+'</p>'+
+      '<ul class="info-lista">'+
+      '<li><b>Melhor sequência</b>'+melhor+(melhor===1?" dia":" dias")+(melhor&&melhor===n?" (é a atual!)":"")+'</li>'+
+      (prox?'<li><b>Próxima comemoração</b>'+prox+' dias. Faltam '+(prox-n)+(prox-n===1?" dia":" dias")+'.</li>':"")+
+      '<li><b>Últimos 30 dias</b>'+mes+(mes===1?" dia":" dias")+' com treino</li>'+
+      '<li><b>O que conta</b>Qualquer dia com fortalecimento ou escalada registrado.</li></ul>'+
+      '<h3 class="sec-t" style="font-size:22px;margin:18px 0 2px">Últimos 14 dias</h3><div class="seq-dias">'+dias+'</div>'+
+      '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span></div>'+
+      '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
   }
   if(U.folha==="info"&&INFO[U.info]){
     const e=EX.find(x=>x.k===U.info),i=INFO[e.k];
@@ -1230,6 +1257,11 @@ document.addEventListener("click",ev=>{
     case "expandir":U.abertos[v]=true;render();break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;render();break;
+    case "retro":U.folha="retro";U.erro="";U.abre=true;render();break;
+    case "retro-ok":{const d=($("#retro-data")||{}).value||"";
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){U.erro="Escolha um dia.";return render()}
+      if(d>hoje()){U.erro="Não dá para registrar um dia que ainda não chegou.";return render()}
+      U.erro="";U.folha=null;U.dia=d;U.tela="treino";U.card=null;render();toast("Registrando "+dm(d));break}
     case "esf":U.esf=+v;U.erro="";render();break;
     case "esc":U.escSim=v==="1";U.erro="";render();break;
     case "esc-min":U.escMin=+v;U.erro="";render();break;
