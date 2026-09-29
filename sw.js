@@ -2,10 +2,11 @@
 // Guarda uma cópia do app no aparelho para ele abrir sem internet.
 // Com internet boa, busca a versão mais nova. Se a rede demorar (sinal fraco no ginásio),
 // abre na hora com a cópia guardada e atualiza em segundo plano para a próxima vez.
-// Se você publicar uma atualização, aumente o número em CACHE (v35 -> v36).
-const CACHE = "diario-escalada-app-v35";
-const FONTES = "diario-escalada-fontes-v1";
-const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
+// Se você publicar uma atualização, aumente o número em CACHE (v36 -> v37).
+// As fontes ficam no próprio app e entram aqui: o app abre com a fonte certa mesmo sem sinal.
+const CACHE = "diario-escalada-app-v36";
+const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
+  "fontes/archivo.woff2", "fontes/bebas-neue.woff2"];
 const ESPERA_MS = 2500;
 
 self.addEventListener("install", (e) => {
@@ -15,7 +16,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((nomes) => Promise.all(nomes.filter((n) => n !== CACHE && n !== FONTES).map((n) => caches.delete(n))))
+      .then((nomes) => Promise.all(nomes.filter((n) => n !== CACHE).map((n) => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
@@ -24,19 +25,6 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-
-  // Fontes do Google: guarda na primeira vez e usa a cópia depois (elas não mudam).
-  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
-    e.respondWith(
-      caches.open(FONTES).then((c) =>
-        c.match(req).then((r) => r || fetch(req).then((res) => {
-          if (res && (res.ok || res.type === "opaque")) c.put(req, res.clone());
-          return res;
-        }))
-      )
-    );
-    return;
-  }
 
   if (url.origin !== self.location.origin) return;
 
