@@ -2,8 +2,8 @@
 // Guarda uma cópia do app no aparelho para ele abrir sem internet.
 // Com internet boa, busca a versão mais nova. Se a rede demorar (sinal fraco no ginásio),
 // abre na hora com a cópia guardada e atualiza em segundo plano para a próxima vez.
-// Se você publicar uma atualização, aumente o número em CACHE (v33 -> v34).
-const CACHE = "diario-escalada-app-v33";
+// Se você publicar uma atualização, aumente o número em CACHE (v34 -> v35).
+const CACHE = "diario-escalada-app-v34";
 const FONTES = "diario-escalada-fontes-v1";
 const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 const ESPERA_MS = 2500;

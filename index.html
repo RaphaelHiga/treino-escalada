@@ -589,6 +589,7 @@ function normalizar(d){
   n.ultimoBackup=/^\d{4}-\d{2}-\d{2}$/.test(d.ultimoBackup)?d.ultimoBackup:null;
   if(d.conq&&typeof d.conq==="object")n.conq=d.conq;
   if(Array.isArray(d.vistos))n.vistos=d.vistos;
+  if(Array.isArray(d.conqPend))n.conqPend=d.conqPend;
   return n;
 }
 function migrarV2(d,v2){
@@ -879,7 +880,7 @@ function marcarTodas(slot){
   gravar();
   if(navigator.vibrate)try{navigator.vibrate(virouOk?12:cheio?[8,40,8]:6)}catch(x){}
   U.fila=U.fila.concat(ev);
-  render();
+  U.segurarConq=true;render();
 }
 function marcar(slot,i){
   const antesTinha=treinou(D.sessoes[U.dia]);
@@ -902,7 +903,7 @@ function marcar(slot,i){
   gravar();
   if(navigator.vibrate)try{navigator.vibrate(virouOk?12:6)}catch(x){}
   U.fila=U.fila.concat(ev);
-  render();
+  U.segurarConq=true;render();
 }
 function ajustarCarga(slot,delta){
   const e=exDe(slot);let v=r1(cargaAtual(slot)+delta);
@@ -929,6 +930,8 @@ function salvarSessao(){
   /* sem fortalecimento, sem escalada e sem dor: fica registrado como dia de descanso */
   const descanso=!forta&&!U.escSim&&!U.dorSim;if(descanso)s.descanso=true;else delete s.descanso;
   gravar();U.folha=null;
+  /* conquistas batidas com este registro entram na espera junto com as que vieram das séries */
+  checarConquistas(true);
   /* mesma ordem das perguntas da janela: com fortalecimento é nota, dor, escalada;
      sem fortalecimento ("Como foi o dia?") é escalada, dor */
   const escal=s.escalada?{tipo:"escalada",min:s.escalada.min,int:s.escalada.int}:{tipo:"semescalada"};
@@ -937,6 +940,10 @@ function salvarSessao(){
   else if(forta)U.fila.push({tipo:"esforco",nota:s.esforco},dorEv,escal);
   else U.fila.push.apply(U.fila,(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv]));
   U.fila=U.fila.concat(eventosSequencia(antes));
+  /* só agora, depois de fortalecimento, dor e escalada, as conquistas (as que ainda valem) */
+  const pend=(D.conqPend||[]).filter(k=>D.conq&&D.conq[k]);
+  if(D.conqPend){delete D.conqPend;gravar()}
+  U.fila=U.fila.concat(pend.map(k=>({tipo:"conquista",id:k})));
   toast(descanso?"Descanso registrado":"Sessão salva");render();
 }
 let tArm;
@@ -1418,15 +1425,19 @@ function calcConquistas(){
 }
 /* acompanha o histórico: conquista nova entra na fila de comemoração (uma vez por uso do app)
    e, se o registro que a gerou for excluído, ela volta a ficar bloqueada.
+   segurar=true: veio do treino (séries ou sessão). Fica em D.conqPend e só é comemorada ao
+   salvar a sessão, depois das cenas de fortalecimento, dor e escalada.
    Na primeira vez (ou depois de importar um backup sem conquistas) guarda tudo sem comemorar. */
-function checarConquistas(){
+function checarConquistas(segurar){
   const R=calcConquistas(),primeira=!D.conq;let mudou=primeira;
   if(primeira)D.conq={};
   CONQ.forEach(c=>{const r=R[c.k],d=r&&r.data,tinha=D.conq[c.k];
     if(!d){if(tinha){delete D.conq[c.k];mudou=true}return}
     if(tinha===d)return;
     D.conq[c.k]=d;mudou=true;
-    if(!tinha&&!primeira&&!celebrados.has("conq:"+c.k)){celebrados.add("conq:"+c.k);U.fila.push({tipo:"conquista",id:c.k})}});
+    if(!tinha&&!primeira&&!celebrados.has("conq:"+c.k)){celebrados.add("conq:"+c.k);
+      if(!segurar)U.fila.push({tipo:"conquista",id:c.k});
+      else if((D.conqPend=D.conqPend||[]).indexOf(c.k)<0)D.conqPend.push(c.k)}});
   if(mudou)gravar();
   return R;
 }
@@ -1669,7 +1680,8 @@ function selPop(a,v){
 }
 function render(){
   /* dados mudaram: vê se alguma conquista nova foi batida */
-  if(render.v!==gravar.v){checarConquistas();render.v=gravar.v}
+  if(render.v!==gravar.v){checarConquistas(U.segurarConq);render.v=gravar.v}
+  U.segurarConq=false;
   const y=window.scrollY,mesmaTela=render.ultima===U.tela,rol={};
   document.querySelectorAll('.rolagem-x[id],.rolagem-y').forEach((el,i)=>{rol[el.id||('y'+i)]=[el.scrollLeft,el.scrollTop]});
   $("#app").className="app"+(U.tela==="treino"&&U.dia!==hoje()?" retro":"");
