@@ -447,6 +447,51 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .msc.flex .xl,.msc.flex .fl{animation-duration:.25s}
 .msc.flex .xr,.msc.flex .fr{animation-duration:.25s}
 
+/* tutorial: tela escurecida com um recorte iluminado no item e um balão apontando para ele */
+.tour{position:fixed;inset:0;z-index:55}
+.tour-bloq{position:absolute;inset:0}
+.tour-luz{position:fixed;border-radius:14px;box-shadow:0 0 0 2px var(--gema),0 0 0 200vmax rgba(0,0,0,.74);pointer-events:none;transition:top .35s cubic-bezier(.3,.8,.3,1),left .35s cubic-bezier(.3,.8,.3,1),width .35s cubic-bezier(.3,.8,.3,1),height .35s cubic-bezier(.3,.8,.3,1),opacity .25s}
+.tour-luz.nada{box-shadow:0 0 0 200vmax rgba(0,0,0,.8)}
+.tour-balao{position:fixed;width:min(360px,calc(100vw - 32px));background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:14px 16px 12px;box-shadow:0 10px 40px rgba(0,0,0,.6);transition:opacity .2s}
+.tour-balao.some{opacity:0}
+.tour-balao.entra{animation:tour-entra .35s cubic-bezier(.3,1.5,.5,1)}
+.tour-balao.cutuca{animation:tour-cutuca .4s ease-in-out}
+@keyframes tour-entra{from{opacity:0;transform:translateY(8px) scale(.96)}}
+@keyframes tour-cutuca{25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}
+.tour-seta{position:absolute;width:14px;height:14px;background:var(--s1);border:1px solid var(--line);transform:rotate(45deg);margin-left:-7px}
+.tour-seta.cima{top:-8px;border-right:0;border-bottom:0}
+.tour-seta.baixo{bottom:-8px;border-left:0;border-top:0}
+.tour-cab{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tour-av{width:48px;height:48px;flex:none}
+.tour-av svg{width:100%;height:100%;display:block}
+.tour-tag{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}
+.tour-balao h2{font-size:26px;color:var(--gema)}
+.tour-balao p{font-size:14px;color:var(--ink);line-height:1.45}
+.tour-balao p+p{margin-top:8px}
+.tour-pe{display:flex;align-items:center;gap:8px;margin-top:12px}
+.tour-pular{font-size:13px;color:var(--ink3);padding:8px 0;white-space:nowrap}
+.tour-pts{display:flex;gap:4px;margin-left:auto;margin-right:4px}
+.tour-pts i{width:6px;height:6px;border-radius:50%;background:var(--s2)}
+.tour-pts i.on{background:var(--gema)}
+.tour-volta{height:40px;padding:0 12px;border-radius:10px;background:var(--s2);font-weight:600;font-size:14px}
+.tour-ok{height:40px;padding:0 16px;border-radius:10px;background:var(--gema);color:var(--gema-ink);font-weight:700;font-size:14px}
+.tour-ok:active,.tour-volta:active{transform:scale(.96)}
+.tour-balao.centro{text-align:center;padding:22px 20px 16px}
+.tour-balao.centro .tour-cab{flex-direction:column;gap:6px;margin-bottom:10px}
+.tour-balao.centro .tour-av{width:150px;height:150px}
+.tour-balao.centro h2{font-size:36px}
+.tour-balao.centro .tour-pe{flex-direction:column-reverse;gap:6px;margin-top:16px}
+.tour-balao.centro .tour-pular{margin:0}
+.tour-balao.centro .tour-pts{display:none}
+.tour-balao.centro .tour-ok{width:100%;height:48px;font-size:16px}
+.aj .btn.tour-rever{margin-top:12px}
+.tour-balao{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);overflow:auto}
+.tour-balao:not(.centro){overflow:visible}
+.tour-pe{flex-wrap:wrap}
+.tour-ok,.tour-volta{white-space:nowrap}
+@media (max-width:400px){.tour-pts{display:none}.tour-pular{margin-right:auto}.tour-balao{padding:12px 14px 10px}.tour-balao h2{font-size:23px}.tour-av{width:40px;height:40px}}
+@media (max-height:700px){.tour-balao.centro .tour-av{width:104px;height:104px}.tour-balao.centro h2{font-size:30px}.tour-balao.centro{padding-top:16px}}
+
 /* abertura */
 #abertura{position:fixed;inset:0;z-index:60;background:#000;display:grid;place-items:center;text-align:center;padding:24px;transition:opacity .45s,transform .45s}
 #abertura.sai{opacity:0;transform:scale(1.06);pointer-events:none}
@@ -593,6 +638,8 @@ const fmtMin=m=>m<60?m+" min":Math.floor(m/60)+"h"+(m%60?String(m%60).padStart(2
 const temEsf=s=>!!s&&typeof s.esforco==="number";
 const K3="diario-escalada-v3", K2="diario-escalada-v2";
 const DIAS_ENF=10, JANELA=30;
+/* tutorial em andamento: enquanto ativo, D guarda dados de exemplo e nada é gravado */
+const TOUR={ativo:false};
 
 /* ================= utilidades ================= */
 const $=s=>document.querySelector(s);
@@ -628,6 +675,7 @@ function normalizar(d){
   if(d.conq&&typeof d.conq==="object")n.conq=d.conq;
   if(Array.isArray(d.vistos))n.vistos=d.vistos;
   if(Array.isArray(d.conqPend))n.conqPend=d.conqPend;
+  if(d.tutorial&&typeof d.tutorial==="object")n.tutorial=d.tutorial;
   return n;
 }
 function migrarV2(d,v2){
@@ -654,7 +702,7 @@ function carregar(){
   gravar(d);
   return d;
 }
-function gravar(d){gravar.v=(gravar.v||0)+1;try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
+function gravar(d){gravar.v=(gravar.v||0)+1;if(TOUR.ativo)return;try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
 function sessao(d,dia,criar){
   if(!d.sessoes[dia]&&criar)d.sessoes[dia]={s:{},esforco:null,dor:null};
   return d.sessoes[dia]||null;
@@ -667,6 +715,8 @@ let D=carregar();
 (function(){let mudou=false;Object.keys(D.carga||{}).forEach(sl=>{
   const tem=Object.keys(D.sessoes).some(d=>((D.sessoes[d].s||{})[sl]||[]).some(Boolean));
   if(!tem){delete D.carga[sl];mudou=true}});if(mudou)gravar()})();
+/* tutorial: quem já tem registros não recebe o tour sozinho (dá para rever em Ajustes) */
+if(!D.tutorial){D.tutorial=datas().length||D.pesos.length?{treino:1,evolucao:1,agenda:1,ajustes:1}:{};gravar()}
 
 /* ================= cálculos ================= */
 function pesoEm(dia){
@@ -1116,7 +1166,7 @@ const ABAS=["agenda","treino","evolucao"];
 let toque=null;
 document.addEventListener("touchstart",ev=>{
   const t=ev.touches[0];
-  if(ev.touches.length!==1||U.folha||U.fila.length||ev.target.closest(".rolagem-x,input,.mao-svg,.stp,nav")){toque=null;return}
+  if(ev.touches.length!==1||U.folha||U.fila.length||TOUR.ativo||ev.target.closest(".rolagem-x,input,.mao-svg,.stp,nav")){toque=null;return}
   toque={x:t.clientX,y:t.clientY,t:Date.now(),mes:!!ev.target.closest(".ag-grade,.ag-sem")};
 },{passive:true});
 document.addEventListener("touchend",ev=>{
@@ -1727,6 +1777,7 @@ function telaAjustes(){
   EX.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'});
   h+='</tbody></table><div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos valores sugeridos</button></div></section>';
   h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><p style="margin-top:6px;color:var(--ink3)">'+(D.ultimoBackup?"Último backup: "+dm(D.ultimoBackup)+"/"+D.ultimoBackup.slice(0,4):"Nenhum backup ainda")+'</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
+  h+='<section class="aj" id="aj-tutorial"><h2>Tutorial</h2><p>Esqueceu onde fica alguma coisa? O frango mostra tudo de novo, com dados de exemplo.</p><button class="btn sec tour-rever" data-a="tutorial">Ver tutorial de novo</button></section>';
   return h;
 }
 
@@ -1918,6 +1969,7 @@ function render(){
   render.ultima=U.tela;
   if(U.chama)setTimeout(()=>{U.chama=false},2400);
   navGuardar();
+  tourTalvez();
 }
 /* ================= botão voltar do celular =================
    Cada tela, janela ou dia visitado vira um passo no histórico: voltar leva ao anterior.
@@ -1925,12 +1977,15 @@ function render(){
 const Nav={ult:null,quieto:false};
 const navChave=()=>JSON.stringify([U.tela,U.card,U.folha,U.dia,U.modo,U.mes]);
 function navGuardar(){
-  if(Nav.quieto||!history.pushState)return;
+  if(Nav.quieto||TOUR.ativo||!history.pushState)return;
   const k=navChave();if(k===Nav.ult)return;
   Nav.ult=k;try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes}},"")}catch(x){}
 }
 function navQuieto(){Nav.quieto=true;render();Nav.quieto=false;Nav.ult=navChave();try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo}},"")}catch(x){}}
 window.addEventListener("popstate",ev=>{
+  /* o tutorial ocupa um passo do histórico: voltar fecha o tutorial */
+  if(TOUR.ignorarPop){TOUR.ignorarPop=false;return}
+  if(TOUR.ativo){tourFechar("voltar");return}
   const st=ev.state;
   if(!st||st.raiz){
     if(U.folha==="sair"){history.back();return}          /* voltar de novo com a pergunta aberta: sai */
@@ -1993,6 +2048,7 @@ document.addEventListener("click",ev=>{
     case "aviso-fechar":U.avisoFechado=true;render();break;
     case "exportar":exportar();break;
     case "importar":$("#arquivo").click();break;
+    case "tutorial":D.tutorial={};gravar();U.tela="treino";U.dia=hoje();U.card=null;U.modo=null;U.folha=null;render();break;
     case "cortes-padrao":D.cortes=JSON.parse(JSON.stringify(CORTES));verificarFases();gravar();toast("Cortes restaurados");render();break;
   }
 });
@@ -2009,6 +2065,7 @@ document.addEventListener("change",ev=>{
   }
 });
 document.addEventListener("keydown",ev=>{
+  if(TOUR.ativo){tourTecla(ev);return}
   if(ev.key==="Enter"&&ev.target.matches("input[data-a]"))ev.target.blur();
   if(ev.key==="Escape"){if(U.fila.length){U.fila.shift();render()}else if(U.folha){U.folha=null;U.imp=null;render()}}
 });
@@ -2022,10 +2079,204 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 
+/* ================= tutorial =================
+   Na primeira vez em cada aba, o frango aponta os itens um a um e a pessoa avança no "Entendi".
+   Durante o tutorial D vira um frango de exemplo (dadosExemplo) e gravar() não salva nada;
+   ao fechar, os dados reais e a tela de antes voltam. D.tutorial guarda as abas já explicadas. */
+const ROTEIROS={
+  treino:[
+    {fase:0,ok:"Bora!",t:"Cocoricó! Bem-vindo à granja",
+      x:"Eu sou o Franguinho: magrelo, tremendo e com medo de agarra de 20 mm. Com o seu treino eu viro Frango, Frangão e, se você não fizer corpo mole, Máquina.\n\nBora dar uma voltinha pelo app? Peguei emprestados os dados de um frango de exemplo. Nada disso é salvo, juro por todas as minhas penas."},
+    {alvo:"nav",t:"Três cômodos no galinheiro",x:"Histórico, Treino e Evolução. Toque aqui embaixo ou arraste o dedo para o lado para trocar de aba."},
+    {alvo:"#app .topo .dia",t:"Máquina do tempo",x:"Esqueceu de registrar ontem? As setinhas voltam os dias. Tudo o que você marcar vai para o dia que aparece aqui, e a tela fica azul para você não se confundir."},
+    {alvo:"#app section.ex:not([data-ex])",t:"Sobe na balança",x:"Aqui tudo é medido em % do seu peso: frango leve puxa mais fácil. Ajuste no − e + e toque em Salvar. Uma pesagem por semana já dá conta."},
+    {alvo:"#app [data-ex=maxhang] .ex-top",t:"Cada exercício tem seu frango",x:"São 5 exercícios, cada um com um frango que cresce junto com a sua força. O ⓘ ao lado do nome ensina a fazer e os cuidados para não virar frango de canja."},
+    {alvo:"#app [data-ex=maxhang] .stp",t:"Quanto peso?",x:"O − e o + mudam a carga de 0,5 em 0,5 kg (segurar acelera). Também dá para tocar no número e digitar. Nos exercícios pendurados, + é peso extra e − é alívio."},
+    {alvo:"#app [data-a=feito][data-s=maxhang]",t:"O botão mais importante",x:"Fez as 3 séries? 1 toque marca Feito, 2 toques marcam Falha e 3 toques limpam.\n\nFalha não é vergonha: conta como dia de treino, só não vale para recorde nem para subir de fase."},
+    {alvo:"#app [data-ex=maxhang] .ex-top .rel",t:"Sua marca",x:"A melhor marca dos últimos 30 dias, em % do seu peso. É esse número que faz o frango trocar de pena."},
+    {alvo:"#app .fechar",t:"Fechou o treino? Conta tudo",x:"Aqui você dá uma nota de 1 a 10 para o fortalecimento, marca na mão desenhada se algum dedo doeu e diz quanto tempo escalou.\n\nNão treinou? Registre o descanso: frango também precisa de sofá."},
+    {alvo:"#app .pill.chama",t:"Não deixe o fogo apagar",x:"Dias seguidos com treino, e escalada também conta. Toque na chama para ver os detalhes da sequência."},
+    {alvo:"#app .eng",t:"Ajustes",x:"Cortes das fases, backup dos seus dados e o botão para ver este tutorial de novo."},
+    {fase:3,ok:"Bora treinar!",t:"Pronto, frango!",
+      x:"Agora eu devolvo os dados de exemplo para o vizinho e o app fica todo seu, zerado.\n\nNa primeira vez que você abrir o Histórico, a Evolução e os Ajustes, eu apareço rapidinho para mostrar o que tem lá."}
+  ],
+  evolucao:[
+    {alvo:"#app .gal",fase:2,t:"A granja inteira",x:"Cada frango é um exercício, com a fase atual e a melhor marca em % do peso. Toque num frango para ver os detalhes."},
+    {alvo:"#app .card .info",card:"maxhang",t:"Quanto falta para evoluir",x:"No detalhe aparecem o recorde e a próxima fase, com a carga exata que você precisa bater. A barrinha mostra quanto já andou."},
+    {alvo:"#app .card .grafico",card:"maxhang",t:"Sobe, frango, sobe",x:"Cada ponto é um treino. As linhas tracejadas são os cortes das fases: passou da linha, trocou de pena."},
+    {alvo:"#r-semana",t:"Fortalecimento por semana",x:"A soma das notas de fortalecimento de cada semana. Os pontinhos embaixo marcam semanas com dor. Arraste para o lado para ver as semanas antigas."},
+    {alvo:"#app .sec-linha [data-a=retro]:not([data-v])",t:"Registrar outro dia",x:"Esqueceu de anotar? O + registra uma sessão de outro dia. Na lista abaixo, o lápis edita e a lixeira exclui."},
+    {alvo:"#app .estagios",fase:3,t:"Do Franguinho à Máquina",x:"Bateu o corte, sobe de fase. Mas cuidado: 10 dias sem treinar um exercício enferrujam o frango e ele cai uma fase."}
+  ],
+  agenda:[
+    {alvo:"#app .mes-nav",t:"Seu diário de bordo",x:"O histórico fica aqui, mês a mês. Use as setas para trocar de mês."},
+    {alvo:"#app .ag-grade",t:"Uma cabecinha por dia",x:"Cabeça amarela é dia de fortalecimento, cinza é só escalada e só o contorno é descanso. A bolinha vermelha marca falha.\n\nToque num dia para ver tudo o que foi registrado."},
+    {alvo:"#app .conq-grade",fase:2,t:"Conquistas",x:"Medalhas por constância, recordes, horas de parede... e umas surpresas escondidas. Toque numa medalha para ver quanto falta."}
+  ],
+  ajustes:[
+    {alvo:"#app .cortes",t:"A régua das fases",x:"Os cortes definem quando o frango muda de fase, em % do peso. Achou fácil ou difícil demais? Ajuste aqui."},
+    {alvo:()=>{const b=$("#app [data-a=exportar]");return b&&b.parentElement},t:"Frango prevenido vale por dois",x:"Seus treinos ficam só neste celular. Exporte de vez em quando e guarde no Drive, no e-mail ou onde preferir. Trocou de celular? É só importar."},
+    {alvo:"#aj-tutorial",t:"Quer rever?",x:"Este botão mostra o tutorial de novo quando você quiser."}
+  ]
+};
+/* frango de exemplo: 3 semanas de treino com evolução, uma falha, uma dor antiga e fases variadas */
+function dadosExemplo(){
+  const d=novo(),dia=n=>somaDias(hoje(),-n),t=Date.now();
+  d.pesos=[[20,71.2],[13,70.8],[6,70.5],[1,70.4]].map(p=>({data:dia(p[0]),kg:p[1]}));
+  const esc=(min,int)=>({min:min,int:int});
+  /* [dias atrás, nota do fortalecimento, escalada, cargas por série, exercícios com falha, dor] */
+  [[20,6,esc(90,"moderada"),{maxhang:12,resist:1,barra:0}],
+   [18,7,false,{edgeE:26,edgeD:24,pincaE:14,pincaD:13}],
+   [16,7,esc(60,"leve"),{maxhang:14,resist:2,barra:1}],
+   [13,8,esc(120,"intensa"),{edgeE:30,edgeD:28,pincaE:16,pincaD:15},[],{"esquerda:Anelar:PIP":1}],
+   [11,7,false,{maxhang:16,resist:3,barra:2}],
+   [9,8,esc(90,"moderada"),{edgeE:33,edgeD:32,pincaE:18,pincaD:17,barra:4},["barra"]],
+   [6,9,false,{maxhang:18,resist:3,barra:2}],
+   [4,8,esc(60,"moderada"),{edgeE:35,edgeD:34,pincaE:19,pincaD:19}],
+   [3,null,esc(150,"intensa"),{}],
+   [2,8,false,{maxhang:20,resist:4,barra:3,edgeE:36,edgeD:36,pincaE:20,pincaD:20}],
+   [1,6,esc(60,"leve"),{resist:4,barra:3}],
+   [0,null,undefined,{pincaE:20,pincaD:20}]   /* hoje: Pinch feito, sessão ainda aberta */
+  ].forEach(r=>{
+    const s={s:{},esforco:r[1],dor:r[5]||null,escalada:r[2]};
+    Object.keys(r[3]).forEach(sl=>{const ok=(r[4]||[]).indexOf(sl)<0;s.s[sl]=[0,1,2].map(()=>({c:r[3][sl],ok:ok,t:t}))});
+    d.sessoes[dia(r[0])]=s;
+  });
+  d.ultimoBackup=dia(5);d.tutorial={};
+  return d;
+}
+const tourAlvo=p=>!p.alvo?null:typeof p.alvo==="function"?p.alvo():document.querySelector(p.alvo);
+function tourPode(t){
+  return !TOUR.ativo&&!!ROTEIROS[t]&&!!D.tutorial&&!D.tutorial[t]&&U.tela===t&&!$("#abertura")&&!U.folha&&!U.fila.length&&
+    !(t==="treino"&&(U.dia!==hoje()||U.modo))&&!(t==="evolucao"&&U.card);
+}
+/* chamado a cada render: aba com tutorial pendente começa depois que a tela assenta */
+function tourTalvez(){
+  if(TOUR.agendado||!tourPode(U.tela))return;
+  const t=U.tela;
+  TOUR.agendado=setTimeout(()=>{TOUR.agendado=null;if(tourPode(t))tourIniciar(t)},t==="treino"?250:500);
+}
+function tourIniciar(t){
+  TOUR.ativo=true;TOUR.tela=t;TOUR.passos=ROTEIROS[t];TOUR.i=0;TOUR.tk=0;TOUR.el=null;
+  TOUR.real=D;TOUR.u={tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes,abertos:U.abertos,fila:U.fila};
+  D=dadosExemplo();verificarFases();checarConquistas();
+  Object.assign(U,{tela:t,card:null,dia:hoje(),modo:null,mes:null,abertos:{},fila:[],folha:null,pd:null,armado:null});
+  try{history.pushState({tour:1},"")}catch(x){}
+  document.body.insertAdjacentHTML("beforeend",'<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-bloq"></div>'+
+    '<div class="tour-luz nada" style="top:50%;left:50%;width:0;height:0"></div><div class="tour-balao some"></div></div>');
+  ["#app","nav","#camada"].forEach(s=>{const e=$(s);if(e)e.inert=true});
+  render.ultima=null;render();
+  tourMostrar(1);
+}
+function tourFechar(modo){
+  if(!TOUR.ativo)return;
+  D=TOUR.real;TOUR.ativo=false;TOUR.tk++;TOUR.el=null;
+  D.tutorial=D.tutorial||{};
+  if(modo==="pular")Object.keys(ROTEIROS).forEach(k=>{D.tutorial[k]=1});else D.tutorial[TOUR.tela]=1;
+  gravar();
+  Object.assign(U,TOUR.u,{folha:null,pd:null,armado:null});
+  const el=$(".tour");if(el)el.remove();
+  ["#app","nav","#camada"].forEach(s=>{const e=$(s);if(e)e.inert=false});
+  /* tira do histórico o passo do tutorial (se foi o voltar que fechou, ele já saiu) */
+  if(modo!=="voltar"){TOUR.ignorarPop=true;history.back()}
+  render.ultima=null;render();
+  if(modo==="pular")toast("Dá para rever o tutorial em Ajustes");
+}
+function tourPasso(d){
+  const n=TOUR.i+d;if(n<0)return;
+  if(n>=TOUR.passos.length)return tourFechar("fim");
+  TOUR.i=n;tourMostrar(d);
+}
+function tourMostrar(dir){
+  const p=TOUR.passos[TOUR.i],tk=++TOUR.tk,bal=$(".tour-balao");
+  if((p.card||null)!==U.card){U.card=p.card||null;render.ultima=null;render()}
+  const el=tourAlvo(p);
+  /* item que não existe nesta tela: segue para o próximo */
+  if(p.alvo&&!el)return tourPasso(dir||1);
+  TOUR.el=el;bal.classList.add("some");
+  const seguir=()=>{
+    if(tk!==TOUR.tk)return;
+    tourConteudo();tourPos();
+    bal.classList.remove("some","entra");void bal.offsetWidth;bal.classList.add("entra");
+    /* no teclado o foco vai para o Entendi; no toque não, para não acender o contorno */
+    const ok=bal.querySelector(".tour-ok");if(ok&&matchMedia("(pointer:fine)").matches)try{ok.focus({preventScroll:true})}catch(x){}
+  };
+  if(!el||el.closest("nav,.topo.fixo"))return setTimeout(seguir,el?120:200);
+  const r=el.getBoundingClientRect();
+  tourRolar(window.scrollY+r.top-tourLimites().cima-18,seguir);
+}
+function tourLimites(){
+  const t=document.querySelector(".topo.fixo"),n=document.querySelector("nav");
+  return {cima:t?Math.max(0,t.getBoundingClientRect().bottom):0,baixo:n?n.getBoundingClientRect().top:innerHeight};
+}
+/* rola até o item e só mostra o balão quando a rolagem para */
+function tourRolar(y,cb){
+  const max=document.documentElement.scrollHeight-innerHeight;
+  y=Math.max(0,Math.min(max,Math.round(y)));
+  if(Math.abs(y-window.scrollY)<2)return setTimeout(cb,120);
+  window.scrollTo({top:y,behavior:RM?"auto":"smooth"});
+  let ult=-1,iguais=0;const t0=performance.now();
+  const f=()=>{const a=window.scrollY;iguais=Math.abs(a-ult)<.5?iguais+1:0;ult=a;
+    if(iguais>=4||performance.now()-t0>1000)cb();else requestAnimationFrame(f)};
+  requestAnimationFrame(f);
+}
+function tourConteudo(){
+  const p=TOUR.passos[TOUR.i],n=TOUR.passos.length,ult=TOUR.i===n-1,bal=$(".tour-balao");
+  const pts=TOUR.passos.map((q,i)=>q.alvo?'<i'+(i===TOUR.i?' class="on"':'')+'></i>':'').join("");
+  bal.innerHTML='<div class="tour-cab"><div class="tour-av">'+ave({cor:"#FFC83D"},{fase:p.fase===undefined?1:p.fase})+'</div>'+
+    '<div><span class="tour-tag">'+(p.alvo?"Dados de exemplo · nada é salvo":"Tutorial")+'</span><h2 id="tour-t">'+p.t+'</h2></div></div>'+
+    p.x.split("\n\n").map(t=>'<p>'+t+'</p>').join("")+
+    '<div class="tour-pe">'+(ult?"":'<button class="tour-pular" data-t="pular">'+(p.alvo?"Pular":"Pular tutorial")+'</button>')+
+    (p.alvo?'<span class="tour-pts" aria-hidden="true">'+pts+'</span>':"")+
+    (p.alvo&&TOUR.i>0&&TOUR.passos[TOUR.i-1].alvo?'<button class="tour-volta" data-t="volta">Voltar</button>':"")+
+    '<button class="tour-ok" data-t="ok">'+(p.ok||"Entendi")+'</button></div><i class="tour-seta" aria-hidden="true"></i>';
+}
+/* recorte de luz em volta do item e balão acima ou abaixo, onde couber */
+function tourPos(){
+  if(!TOUR.ativo)return;
+  const luz=$(".tour-luz"),bal=$(".tour-balao"),seta=bal.querySelector(".tour-seta"),el=TOUR.el;
+  const vw=document.documentElement.clientWidth,vh=innerHeight;
+  if(!el||!el.isConnected){
+    luz.className="tour-luz nada";Object.assign(luz.style,{top:vh/2+"px",left:vw/2+"px",width:"0px",height:"0px"});
+    bal.classList.add("centro");if(seta)seta.hidden=true;
+    bal.style.left=Math.max(16,(vw-bal.offsetWidth)/2)+"px";bal.style.top=Math.max(12,(vh-bal.offsetHeight)/2)+"px";
+    return;
+  }
+  bal.classList.remove("centro");luz.className="tour-luz";if(seta)seta.hidden=false;
+  const r=el.getBoundingClientRect(),pad=6,bh=bal.offsetHeight,bw=bal.offsetWidth,lim=tourLimites();
+  const x=Math.max(4,r.left-pad),w=Math.min(vw-4,r.right+pad)-x,y=r.top-pad;let h=r.height+pad*2;
+  /* item mais alto que a tela: ilumina só o começo e deixa lugar para o balão */
+  if(!el.closest("nav,.topo.fixo"))h=Math.min(h,Math.max(90,lim.baixo-Math.max(y,lim.cima)-bh-30));
+  Object.assign(luz.style,{top:y+"px",left:x+"px",width:w+"px",height:h+"px"});
+  const cx=x+w/2,bx=Math.max(16,Math.min(vw-16-bw,cx-bw/2));
+  const abaixo=vh-8-(y+h),acima=y-8,emBaixo=abaixo>=bh+14||abaixo>=acima;
+  const by=Math.max(8,Math.min(vh-8-bh,emBaixo?y+h+14:y-14-bh));
+  bal.style.left=bx+"px";bal.style.top=by+"px";
+  if(seta){seta.className="tour-seta "+(emBaixo?"cima":"baixo");seta.style.left=Math.max(22,Math.min(bw-22,cx-bx))+"px"}
+}
+function tourTecla(ev){
+  if(ev.key==="Escape"){ev.preventDefault();tourFechar("fecha")}
+  else if(ev.key==="ArrowRight"){ev.preventDefault();tourPasso(1)}
+  else if(ev.key==="ArrowLeft"){ev.preventDefault();tourPasso(-1)}
+}
+document.addEventListener("click",ev=>{
+  if(!TOUR.ativo)return;
+  const b=ev.target.closest("[data-t]");
+  if(!b){
+    /* toque fora do balão não avança: o balão dá uma sacudida para chamar atenção */
+    if(ev.target.closest(".tour-bloq")&&!RM){const bal=$(".tour-balao");bal.classList.remove("entra","cutuca");void bal.offsetWidth;bal.classList.add("cutuca")}
+    return;
+  }
+  const a=b.dataset.t;
+  if(a==="ok")tourPasso(1);else if(a==="volta")tourPasso(-1);else if(a==="pular")tourFechar("pular");
+});
+{let raf=0;const pos=()=>{if(!TOUR.ativo||raf)return;raf=requestAnimationFrame(()=>{raf=0;tourPos()})};
+  window.addEventListener("resize",pos);window.addEventListener("scroll",pos,{passive:true})}
+
 /* ================= abertura: frango evoluindo ================= */
 function abertura(){
   const el=$("#abertura");if(!el)return;
-  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){el.remove();return}
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){el.remove();tourTalvez();return}
   el.innerHTML='<div class="caixa"><div class="msc-g">'+ave({cor:"#FFC83D"},{fase:0,todas:true})+'</div><h1>Diário do<br>Escalador Frango</h1><p class="nome-fase">'+FASES[0]+'</p><div class="passos"><i class="on"></i><i></i><i></i><i></i></div></div>';
   const svg=el.querySelector("svg"),bu=svg.querySelector(".burst");bu.setAttribute("stroke","#fff");
   let f=0,fim=false;const ts=[];
@@ -2035,7 +2286,7 @@ function abertura(){
     el.querySelector(".nome-fase").textContent=FASES[n];
     el.querySelectorAll(".passos i").forEach((x,i)=>x.classList.toggle("on",i<=n));
   };
-  const fechar=()=>{if(fim)return;fim=true;ts.forEach(clearTimeout);el.classList.add("sai");setTimeout(()=>el.remove(),480)};
+  const fechar=()=>{if(fim)return;fim=true;ts.forEach(clearTimeout);el.classList.add("sai");setTimeout(()=>{el.remove();tourTalvez()},480)};
   for(let n=1;n<=3;n++)ts.push(setTimeout(()=>trocar(n),n*620));
   ts.push(setTimeout(fechar,3*620+900));
   el.addEventListener("click",fechar);
