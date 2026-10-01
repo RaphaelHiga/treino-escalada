@@ -1259,6 +1259,8 @@ document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp"))ev.pre
 
 /* ================= telas ================= */
 const pillSeq=seq=>seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"";
+const IC_FALHA='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+const IC_FEITO='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function telaTreino(){
   const s=D.sessoes[U.dia],ehHoje=U.dia===hoje(),seq=sequencia(),p=pesoAtual();
   const dataTxt=dt(U.dia).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"}),dataCurta=dataTxt.replace("-feira","");
@@ -1303,7 +1305,7 @@ function telaTreino(){
         '<button data-a="mais" data-s="'+sl+'" aria-label="Mais carga">+</button></div><div class="sets">';
       {const ok=a.filter(x=>x&&x.ok),cheio=ok.length===3,falhou=a.length===3&&a.every(x=>x&&!x.ok),pop=U.pop===sl+":all"?(falhou?" treme-f":" pop"):"";
         const n=ok.length,arco=n?'<path d="M12 2.5 A9.5 9.5 0 '+(n>1?1:0)+' 1 '+(12+9.5*Math.sin(n*2.0944)).toFixed(2)+' '+(12-9.5*Math.cos(n*2.0944)).toFixed(2)+'" fill="none" stroke="var(--gema)" stroke-width="2.5" stroke-linecap="round"/>':"";
-        const ic=falhou?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>':cheio?'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        const ic=falhou?IC_FALHA:cheio?IC_FEITO
           :'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="var(--ink3)" stroke-width="1.8"/>'+(n&&!cheio?arco:"")+'</svg>';
         const txt=ic+'<span class="tx">'+(cheio?'Feito<small>3 × '+esc(fmtCarga(e,ok[0].c))+'</small>':falhou?'Falha<small>3 × '+esc(fmtCarga(e,a[0].c))+'</small>':n?n+' de 3<small>completar</small>':'Feito?<small>3 séries</small>')+'</span>';
         const lbl=(lado?(lado==="Esq"?"Mão esquerda: ":"Mão direita: "):"")+(cheio?"Feito com "+nf1.format(ok[0].c)+" kg. Toque para marcar como falha":falhou?"Falha com "+nf1.format(a[0].c)+" kg. Toque para limpar":"Toque para marcar as 3 séries como feitas");
@@ -2192,19 +2194,15 @@ document.addEventListener("visibilitychange",()=>{
 const blocoFolha=t=>[...document.querySelectorAll(".folha .bloco")].find(b=>{const h=b.querySelector("h3");return h&&h.textContent.indexOf(t)===0})||null;
 const ROTEIROS={
   treino:[
-    {ovo:true,ok:"Bora!",t:"Cocoricó! Bem-vindo à granja",x:"Bora dar uma voltinha pela granja?"},
-    {t:"Mapa do galinheiro",varios:[
-      {alvo:"nav",r:"Abas",x:"Histórico, Treino e Evolução. Toque ou arraste para o lado."},
-      {alvo:"#app .topo .dia",r:"Data",x:"As setas trocam o dia do registro."},
-      {alvo:"#app .topo .pill.chama",r:"Sequência",x:"Dias seguidos com treino."}]},
+    {ovo:true,ok:"Bora!",t:"Cocoricó! Bem-vindo à granja",x:"Bora dar uma voltinha pela granja?\n\nVou te mostrar como registrar seus treinos e como o app funciona."},
     {alvo:"#app section.ex:not([data-ex])",demo:"peso",t:"Sobe na balança",x:"Tudo é medido em % do seu peso. Ajuste no − e + e toque em Salvar. Uma pesagem por semana já basta."},
     {t:"Hora do treino",rola:true,varios:[
       {alvo:"#app [data-ex=maxhang] .ex-top",r:"Exercício",x:"Cada exercício tem um frango que cresce com a sua força. O ⓘ ensina a fazer."},
-      {alvo:"#app [data-ex=maxhang] .linha",r:"Carga e séries",x:"O − e o + mudam a carga. Fez as 3 séries? 1 toque marca Feito, 2 marcam Falha e 3 limpam."},
+      {alvo:"#app [data-ex=maxhang] .linha",r:"Carga e séries",demo:"carga",ms:7600,x:"O − e o + mudam a carga. Fez as 3 séries? 1 toque marca Feito, 2 marcam Falha e 3 limpam."},
       {alvo:"#app .fechar",r:"Fim do treino",x:"Toque aqui para registrar intensidade, dor e escalada. Não treinou? Registre o descanso."}]},
-    {folha:"sessao",alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
-    {folha:"sessao",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
-    {folha:"sessao",alvo:()=>{const b=blocoFolha("Escalou");return b&&[...b.querySelectorAll("h4,.tempos,.intens")]},t:"Escalada",x:"Escalou? Marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
+    {folha:"sessao",u:{dorSim:false,dorP:{}},alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
+    {folha:"sessao",u:{dorSim:true,dorP:{},mao:"esquerda"},demo:"dor",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
+    {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},alvo:()=>{const b=blocoFolha("Escalou");return b&&[...b.querySelectorAll("h4,.tempos,.intens")]},t:"Escalada",x:"Escalou? Marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
     {alvo:"#app .eng",t:"Ajustes",x:"Cortes das fases, backup dos seus dados e o botão para ver este tutorial de novo."},
     {so:true,ok:"Bora treinar!",t:"Pronto, frango!"}
   ],
@@ -2329,8 +2327,13 @@ function tourFechar(modo){
 }
 /* para o que o passo anterior deixou rodando: destaque passeando, animação de exemplo */
 function tourLimpar(){
-  clearInterval(TOUR.ciclo);clearTimeout(TOUR.td);TOUR.ciclo=TOUR.td=null;
-  if(TOUR.desfaz){TOUR.desfaz();TOUR.desfaz=null}
+  clearTimeout(TOUR.ciclo);TOUR.ciclo=null;
+  tourParaDemo();
+}
+/* para a animação de exemplo e desfaz o que ela mudou na tela */
+function tourParaDemo(){
+  clearTimeout(TOUR.td);TOUR.td=null;TOUR.ti=(TOUR.ti||0)+1;
+  if(TOUR.desfaz){const f=TOUR.desfaz;TOUR.desfaz=null;f()}
   const d=$(".tour-dedo");if(d)d.className="tour-dedo";
 }
 function tourPasso(d){
@@ -2342,9 +2345,10 @@ function tourMostrar(dir){
   const p=TOUR.passos[TOUR.i],tk=++TOUR.tk,bal=$(".tour-balao");
   tourLimpar();
   const abriu=!!p.folha&&p.folha!==U.folha;
-  if((p.card||null)!==U.card||(p.folha||null)!==U.folha){
+  if((p.card||null)!==U.card||(p.folha||null)!==U.folha||p.u){
     if((p.card||null)!==U.card){U.card=p.card||null;render.ultima=null}
     if(abriu){FOLHAS_TOUR[p.folha]();U.abre=true}
+    if(p.u)Object.assign(U,JSON.parse(JSON.stringify(p.u)));
     U.folha=p.folha||null;render();
   }
   let el;
@@ -2365,7 +2369,7 @@ function tourMostrar(dir){
     /* no teclado o foco vai para o Entendi; no toque não, para não acender o contorno */
     const ok=bal.querySelector(".tour-ok");if(ok&&matchMedia("(pointer:fine)").matches)try{ok.focus({preventScroll:true})}catch(x){}
     if(p.varios&&TOUR.vis.length>1)tourCiclo();
-    if(p.demo==="peso")demoPeso(tk);
+    if(DEMOS[p.demo])DEMOS[p.demo]();
     if(p.ovo&&!RM)TOUR.td=setTimeout(()=>{if(tk!==TOUR.tk)return;tourFaiscas(bal.querySelector(".tour-av"),16,["#FFC83D","#F7F4EC","#FF8C1A","#fff3c4"],90)},1500);
   };
   TOUR.lado=null;
@@ -2385,9 +2389,9 @@ function tourMostrar(dir){
 const tourY=el=>window.scrollY+tourCaixa(el).top-tourLimites().cima-18;
 /* passo com vários itens: o recorte passeia de um para o outro */
 function tourCiclo(){
-  const p=TOUR.passos[TOUR.i];
-  clearInterval(TOUR.ciclo);
-  TOUR.ciclo=setInterval(()=>tourVai((TOUR.vi+1)%TOUR.vis.length),p.rola?3600:2600);
+  const p=TOUR.passos[TOUR.i],q=TOUR.vis[TOUR.vi].q;
+  clearTimeout(TOUR.ciclo);
+  TOUR.ciclo=setTimeout(()=>{tourVai((TOUR.vi+1)%TOUR.vis.length);tourCiclo()},q.ms||(p.rola?3600:2600));
 }
 /* rola: os itens ficam longe um do outro, então a tela rola até cada um e o balão fica do outro lado */
 /* item de um passo com vários: abre o exercício dele, se tiver, e acha o elemento na tela */
@@ -2398,10 +2402,14 @@ function tourItem(i){
 }
 function tourVai(i){
   const p=TOUR.passos[TOUR.i],tk=TOUR.tk;
+  tourParaDemo();
   TOUR.vi=i;TOUR.el=tourItem(i);
   if(!TOUR.el)return;
+  const q=TOUR.vis[i].q,ti=TOUR.ti;
   document.querySelectorAll(".tour-lista button").forEach((b,j)=>{b.classList.toggle("on",j===i);b.setAttribute("aria-pressed",String(j===i))});
-  if(p.rola)tourRolar(tourY(TOUR.el),()=>{if(tk!==TOUR.tk)return;TOUR.lado=null;tourPos()});
+  /* o item com animação começa quando a tela para de rolar */
+  const pronto=()=>{if(tk!==TOUR.tk||ti!==TOUR.ti)return;TOUR.lado=null;tourPos();if(DEMOS[q.demo])DEMOS[q.demo]()};
+  if(p.rola)tourRolar(tourY(TOUR.el),pronto);else pronto();
   tourPos();
 }
 /* faíscas por cima do tutorial (as do app ficam embaixo da camada escura) */
@@ -2411,26 +2419,72 @@ function tourFaiscas(el,n,cores,dist){
   document.querySelectorAll(".faisca").forEach(f=>{if(!antes.has(f))f.style.zIndex=58});
 }
 /* animação do peso: um dedo toca no + três vezes e depois em Salvar. Só mexe na tela; nada é gravado */
-function demoPeso(tk){
-  const mais=$("#app [data-a=peso-mais]"),inp=$("#app input[data-a=peso-val]"),sal=$("#app [data-a=peso-salvar]"),dedo=$(".tour-dedo");
-  if(!mais||!inp||!sal||!dedo)return;
-  const v0=inp.value,t0=sal.textContent,c0=sal.className,kg=num(v0)||0;
-  const volta=()=>{inp.value=v0;sal.textContent=t0;sal.className=c0;mais.classList.remove("tour-aperta");sal.classList.remove("tour-aperta")};
-  TOUR.desfaz=volta;
-  const ir=b=>{const r=b.getBoundingClientRect();dedo.style.left=r.left+r.width/2+"px";dedo.style.top=r.top+r.height/2+"px"};
-  const toca=b=>{[dedo,b].forEach(x=>{x.classList.remove(x===dedo?"toca":"tour-aperta");void x.offsetWidth;x.classList.add(x===dedo?"toca":"tour-aperta")})};
-  const mais1=n=>()=>{toca(mais);inp.value=nf1.format(r1(kg+n/10))};
-  const linha=[
-    [500,()=>{volta();dedo.classList.add("sem-mov");ir(mais);void dedo.offsetWidth;dedo.classList.remove("sem-mov");dedo.classList.add("on")}],
-    [650,mais1(1)],[480,mais1(2)],[480,mais1(3)],
-    [650,()=>ir(sal)],
-    [700,()=>{toca(sal);sal.textContent="Salvo";sal.classList.add("ok","pop");tourFaiscas(sal,9,["#FFC83D","#fff3c4"],34)}],
-    [1700,()=>dedo.classList.remove("on")]
-  ];
-  let i=0;
-  const roda=()=>{if(tk!==TOUR.tk||!TOUR.ativo)return;linha[i][1]();i=(i+1)%linha.length;TOUR.td=setTimeout(roda,linha[i][0]+(i?0:600))};
+/* animações de exemplo: um dedo toca nos botões. Só mexem na tela (nada é gravado) e
+   são desfeitas ao trocar de passo ou de item. Cada linha é [espera em ms, ação]. */
+function tourAnima(linha,repete){
+  const tk=TOUR.tk,ti=TOUR.ti;let i=0;
+  const roda=()=>{
+    if(tk!==TOUR.tk||ti!==TOUR.ti||!TOUR.ativo)return;
+    linha[i][1]();i++;
+    if(i>=linha.length){if(!repete)return;i=0}
+    TOUR.td=setTimeout(roda,linha[i][0]+(i?0:600));
+  };
   TOUR.td=setTimeout(roda,linha[0][0]);
 }
+/* dx/dy: o dedo fica um pouco ao lado do alvo para não esconder o que muda */
+function dedoIr(b,dx,dy){const d=$(".tour-dedo"),r=b.getBoundingClientRect();d.style.left=r.left+r.width/2+(dx||0)+"px";d.style.top=r.top+r.height/2+(dy||0)+"px"}
+function dedoEntra(b,dx,dy){const d=$(".tour-dedo");d.classList.add("sem-mov");dedoIr(b,dx,dy);void d.offsetWidth;d.classList.remove("sem-mov");d.classList.add("on")}
+function dedoToca(b){const d=$(".tour-dedo");[d,b].filter(Boolean).forEach(x=>{const c=x===d?"toca":"tour-aperta";x.classList.remove(c);void x.offsetWidth;x.classList.add(c)})}
+const dedoSai=()=>$(".tour-dedo").classList.remove("on");
+const DEMOS={
+  /* peso: + três vezes e Salvar */
+  peso(){
+    const mais=$("#app [data-a=peso-mais]"),inp=$("#app input[data-a=peso-val]"),sal=$("#app [data-a=peso-salvar]");
+    if(!mais||!inp||!sal)return;
+    const v0=inp.value,t0=sal.textContent,c0=sal.className,kg=num(v0)||0;
+    const volta=()=>{inp.value=v0;sal.textContent=t0;sal.className=c0;mais.classList.remove("tour-aperta")};
+    TOUR.desfaz=volta;
+    const mais1=n=>()=>{dedoToca(mais);inp.value=nf1.format(r1(kg+n/10))};
+    tourAnima([
+      [500,()=>{volta();dedoEntra(mais)}],
+      [650,mais1(1)],[480,mais1(2)],[480,mais1(3)],
+      [650,()=>dedoIr(sal)],
+      [700,()=>{dedoToca(sal);sal.textContent="Salvo";sal.classList.add("ok","pop");tourFaiscas(sal,9,["#FFC83D","#fff3c4"],34)}],
+      [1700,dedoSai]
+    ],true);
+  },
+  /* carga: + duas vezes, depois o botão passa por Feito, Falha e limpo */
+  carga(){
+    const e=EX.find(x=>x.k==="maxhang"),mais=$("#app [data-a=mais][data-s=maxhang]"),inp=$("#app input[data-a=carga][data-s=maxhang]"),bt=$("#app [data-a=feito][data-s=maxhang]");
+    if(!e||!mais||!inp||!bt)return;
+    const v0=inp.value,h0=bt.innerHTML,c0=bt.className,c=num(v0)||0;
+    TOUR.desfaz=()=>{inp.value=v0;bt.innerHTML=h0;bt.className=c0;mais.classList.remove("tour-aperta")};
+    const marca=(cls,ic,t)=>()=>{dedoToca(bt);bt.className="set feito "+cls;bt.innerHTML=ic+'<span class="tx">'+t+'<small>3 × '+esc(fmtCarga(e,c+1))+'</small></span>'};
+    tourAnima([
+      [300,()=>dedoEntra(mais)],
+      [650,()=>{dedoToca(mais);inp.value=nf1.format(c+.5)}],
+      [480,()=>{dedoToca(mais);inp.value=nf1.format(c+1)}],
+      [650,()=>dedoIr(bt,44,12)],
+      [700,()=>{marca("ok pop",IC_FEITO,"Feito")();tourFaiscas(bt,9,["#FFC83D","#fff3c4"],34)}],
+      [1100,marca("falhou treme-f",IC_FALHA,"Falha")],
+      [1100,()=>{dedoToca(bt);bt.className=c0;bt.innerHTML=h0}],
+      [900,dedoSai]
+    ]);
+  },
+  /* dor: toques no mesmo ponto passam por leve, moderada, aguda e apagam */
+  dor(){
+    const k="esquerda:Médio:PIP",seg=document.querySelector('.folha [data-seg="'+k+'"]');
+    if(!seg)return;
+    const d0=Object.assign({},U.dorP);
+    TOUR.desfaz=()=>{U.dorP=d0;render.folha=null;render()};
+    const toque=()=>{dedoToca();tocarDor(k)};
+    tourAnima([
+      [500,()=>dedoEntra(seg,16,22)],
+      [650,toque],[1000,toque],[1000,toque],[1000,toque],
+      [700,dedoSai]
+    ],true);
+  }
+};
 function tourLimites(){
   const t=document.querySelector(".topo.fixo"),n=document.querySelector("nav");
   return {cima:t?Math.max(0,t.getBoundingClientRect().bottom):0,baixo:n?n.getBoundingClientRect().top:innerHeight};
