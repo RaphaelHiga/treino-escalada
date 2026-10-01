@@ -2193,9 +2193,10 @@ const ROTEIROS={
       {alvo:"#app .topo .dia",r:"Data",x:"As setas trocam o dia do registro."},
       {alvo:"#app .topo .pill.chama",r:"Sequência",x:"Dias seguidos com treino."}]},
     {alvo:"#app section.ex:not([data-ex])",demo:"peso",t:"Sobe na balança",x:"Tudo é medido em % do seu peso. Ajuste no − e + e toque em Salvar. Uma pesagem por semana já basta."},
-    {alvo:"#app [data-ex=maxhang] .ex-top",t:"Cada exercício tem seu frango",x:"São 5 exercícios, cada um com um frango que cresce junto com a sua força. O ⓘ ao lado do nome ensina a fazer e os cuidados para não virar frango de canja."},
-    {alvo:"#app [data-ex=maxhang] .linha",t:"Carga e séries",x:"O − e o + mudam a carga de 0,5 em 0,5 kg (segurar acelera). Nos exercícios pendurados, + é peso extra e − é alívio.\n\nFez as 3 séries? 1 toque marca Feito, 2 toques marcam Falha e 3 toques limpam. Falha conta como dia de treino, mas não vale recorde nem fase."},
-    {alvo:"#app .fechar",t:"Fechou o treino? Conta tudo",x:"No fim do dia, toque aqui para registrar o fortalecimento, a dor e a escalada.\n\nNão treinou? Registre o descanso: frango também precisa de sofá."},
+    {t:"Hora do treino",rola:true,varios:[
+      {alvo:"#app [data-ex=maxhang] .ex-top",r:"Exercício",x:"Cada exercício tem um frango que cresce com a sua força. O ⓘ ensina a fazer."},
+      {alvo:"#app [data-ex=maxhang] .linha",r:"Carga e séries",x:"O − e o + mudam a carga. Fez as 3 séries? 1 toque marca Feito, 2 marcam Falha e 3 limpam."},
+      {alvo:"#app .fechar",r:"Fim do treino",x:"Toque aqui para registrar intensidade, dor e escalada. Não treinou? Registre o descanso."}]},
     {folha:"sessao",alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
     {folha:"sessao",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
     {folha:"sessao",alvo:()=>{const b=blocoFolha("Escalou");return b&&[...b.querySelectorAll("h4,.tempos,.intens")]},t:"Escalada",x:"Escalou? Marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
@@ -2360,7 +2361,8 @@ function tourMostrar(dir){
     if(p.demo==="peso")demoPeso(tk);
     if(p.ovo&&!RM)TOUR.td=setTimeout(()=>{if(tk!==TOUR.tk)return;tourFaiscas(bal.querySelector(".tour-av"),16,["#FFC83D","#F7F4EC","#FF8C1A","#fff3c4"],90)},1500);
   };
-  if(p.varios)return tourRolar(0,seguir);
+  TOUR.lado=null;
+  if(p.varios)return tourRolar(p.rola?tourY(el):0,seguir);
   if(!el)return setTimeout(seguir,200);
   const el0=tourPrim(el),fo=el0.closest(".folha");
   /* item dentro de uma janela: rola a janela, não a página */
@@ -2370,17 +2372,22 @@ function tourMostrar(dir){
     return abriu?setTimeout(pos,260):pos();
   }
   if(el0.closest("nav,.topo.fixo"))return setTimeout(seguir,120);
-  const r=tourCaixa(el);
-  tourRolar(window.scrollY+r.top-tourLimites().cima-18,seguir);
+  tourRolar(tourY(el),seguir);
 }
+/* rolagem que deixa o item logo abaixo do título fixo */
+const tourY=el=>window.scrollY+tourCaixa(el).top-tourLimites().cima-18;
 /* passo com vários itens: o recorte passeia de um para o outro */
 function tourCiclo(){
+  const p=TOUR.passos[TOUR.i];
   clearInterval(TOUR.ciclo);
-  TOUR.ciclo=setInterval(()=>tourVai((TOUR.vi+1)%TOUR.vis.length),2600);
+  TOUR.ciclo=setInterval(()=>tourVai((TOUR.vi+1)%TOUR.vis.length),p.rola?3600:2600);
 }
+/* rola: os itens ficam longe um do outro, então a tela rola até cada um e o balão fica do outro lado */
 function tourVai(i){
+  const p=TOUR.passos[TOUR.i],tk=TOUR.tk;
   TOUR.vi=i;TOUR.el=TOUR.vis[i].el;
   document.querySelectorAll(".tour-lista button").forEach((b,j)=>{b.classList.toggle("on",j===i);b.setAttribute("aria-pressed",String(j===i))});
+  if(p.rola)tourRolar(tourY(TOUR.el),()=>{if(tk!==TOUR.tk)return;TOUR.lado=null;tourPos()});
   tourPos();
 }
 /* faíscas por cima do tutorial (as do app ficam embaixo da camada escura) */
@@ -2455,8 +2462,12 @@ function tourPos(){
   /* item que não deixa lugar para o balão nem em cima nem embaixo: ilumina só o começo */
   if(!fixo&&!p.varios&&Math.max(y-lim.cima,lim.baixo-(y+h))<bh+14)h=Math.min(h,Math.max(90,lim.baixo-Math.max(y,lim.cima)-bh-30));
   Object.assign(luz.style,{top:y+"px",left:x+"px",width:w+"px",height:h+"px"});
-  /* vários itens: o balão fica parado no meio e só o recorte anda */
-  if(p.varios){bal.style.left=Math.max(16,(vw-bw)/2)+"px";bal.style.top=Math.max(8,Math.round((vh-bh)/2))+"px";return}
+  /* vários itens: o balão fica parado (no meio, ou do lado oposto ao item quando a tela rola) e só o recorte anda */
+  if(p.varios){
+    if(p.rola&&!TOUR.lado)TOUR.lado=r.top+r.height/2<(lim.cima+lim.baixo)/2?"baixo":"cima";
+    const topo=!p.rola?(vh-bh)/2:TOUR.lado==="baixo"?lim.baixo-12-bh:lim.cima+12;
+    bal.style.left=Math.max(16,(vw-bw)/2)+"px";bal.style.top=Math.max(8,Math.round(topo))+"px";return;
+  }
   const cx=x+w/2,bx=Math.max(16,Math.min(vw-16-bw,cx-bw/2));
   const abaixo=vh-8-(y+h),acima=y-8,emBaixo=abaixo>=bh+14||abaixo>=acima;
   const by=Math.max(8,Math.min(vh-8-bh,emBaixo?y+h+14:y-14-bh));
