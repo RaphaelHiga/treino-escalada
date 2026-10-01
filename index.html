@@ -492,12 +492,17 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .tour-balao.centro .tour-pular{margin:0}
 .tour-balao.centro .tour-ok{width:100%;height:48px;font-size:16px}
 .aj .btn.tour-rever{margin-top:12px}
+/* sobra embaixo durante o tutorial: até o último item pode subir para o alto da tela */
+body.em-tour #app{padding-bottom:60vh}
 /* passo com vários itens: a lista acompanha o recorte que passeia */
 .tour-lista{list-style:none;display:grid;gap:4px;margin-top:2px}
 .tour-lista button{display:grid;gap:1px;width:100%;text-align:left;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.35;color:var(--ink2);border:1px solid transparent;transition:background .25s,border-color .25s,color .25s}
 .tour-lista b{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);transition:color .25s}
 .tour-lista button.on{background:var(--s2);border-color:var(--gema);color:var(--ink)}
 .tour-lista button.on b{color:var(--gema)}
+/* só o item em destaque mostra o texto: os outros ficam só com o nome */
+.tour-lista button:not(.on) span{display:none}
+.tour-lista button:not(.on){padding-block:5px}
 /* último passo: só título e botão */
 .tour-balao.so h2{font-size:44px;margin-bottom:4px}
 /* dedo de exemplo que toca nos botões */
@@ -2204,17 +2209,19 @@ const ROTEIROS={
     {so:true,ok:"Bora treinar!",t:"Pronto, frango!"}
   ],
   evolucao:[
-    {alvo:"#app .gal",fase:2,t:"A granja inteira",x:"Cada frango é um exercício, com a fase atual e a melhor marca em % do peso. Toque num frango para ver os detalhes."},
-    {alvo:"#app .card .info",card:"maxhang",t:"Quanto falta para evoluir",x:"No detalhe aparecem o recorde e a próxima fase, com a carga exata que você precisa bater. A barrinha mostra quanto já andou."},
-    {alvo:"#app .card .grafico",card:"maxhang",t:"Sobe, frango, sobe",x:"Cada ponto é um treino. As linhas tracejadas são os cortes das fases: passou da linha, trocou de pena."},
-    {alvo:"#r-semana",t:"Fortalecimento por semana",x:"A soma das notas de fortalecimento de cada semana. Os pontinhos embaixo marcam semanas com dor. Arraste para o lado para ver as semanas antigas."},
-    {alvo:"#app .sec-linha [data-a=retro]:not([data-v])",t:"Registrar outro dia",x:"Esqueceu de anotar? O + registra uma sessão de outro dia."},
-    {alvo:"#app .rolagem-y:not(.curta) .lista li",t:"Corrigir um registro",x:"O lápis abre o dia no Treino para corrigir carga, nota, dor e escalada. A lixeira exclui: toque de novo em Excluir? para confirmar.\n\nNo peso corporal, a lixeira apaga uma pesagem errada."},
+    {t:"A granja inteira",fase:2,rola:true,varios:[
+      {alvo:"#app .gal",r:"Frangos",x:"Cada frango é um exercício, com a fase e a melhor marca em % do peso. Toque num frango para ver os detalhes."},
+      {alvo:"#app .card .info",card:"maxhang",r:"Próxima fase",x:"O recorde e a carga exata para subir de fase. A barrinha mostra quanto já andou."},
+      {alvo:"#app .card .grafico",card:"maxhang",r:"Gráfico",x:"Cada ponto é um treino. Passou da linha tracejada, trocou de pena."},
+      {alvo:"#r-semana",r:"Por semana",x:"A soma das notas de fortalecimento. Os pontinhos marcam semanas com dor."}]},
+    {alvo:()=>{const b=$("#app .sec-linha [data-a=retro]:not([data-v])");return b&&[b.closest(".sec-linha"),$("#app .rolagem-y:not(.curta) .lista li")]},t:"Sessões",
+      x:"Esqueceu de anotar? O + registra uma sessão de outro dia.\n\nNa lista, o lápis abre o dia no Treino para corrigir e a lixeira exclui: toque de novo em Excluir? para confirmar. No peso corporal, a lixeira apaga uma pesagem errada."},
     {alvo:"#app .estagios",fase:3,t:"Do Franguinho à Máquina",x:"Bateu o corte, sobe de fase. Mas cuidado: 10 dias sem treinar um exercício enferrujam o frango e ele cai uma fase."}
   ],
   agenda:[
-    {alvo:"#app .mes-nav",t:"Seu diário de bordo",x:"O histórico fica aqui, mês a mês. Use as setas para trocar de mês."},
-    {alvo:"#app .hist-tit .pill.chama",t:"Não deixe o fogo apagar",x:"Dias seguidos com treino, e escalada também conta. Toque na chama para ver os detalhes."},
+    {t:"Seu diário de bordo",varios:[
+      {alvo:"#app .mes-nav",r:"Meses",x:"O histórico fica aqui, mês a mês. Use as setas para trocar de mês."},
+      {alvo:"#app .hist-tit .pill.chama",r:"Sequência",x:"Dias seguidos com treino, e escalada também conta. Toque na chama para ver os detalhes."}]},
     {folha:"seq",alvo:()=>[$(".folha .seq-top"),$(".folha .sub")].concat([...document.querySelectorAll(".folha .info-lista li")].slice(0,3)),t:"Detalhes da sequência",x:"Melhor sequência, próxima comemoração, últimos 30 dias e falhas. Embaixo, um calendário das últimas duas semanas.\n\nDia sem registro ou só de descanso apaga o fogo."},
     {alvo:"#app .ag-grade",t:"Uma cabecinha por dia",x:"Cabeça amarela é dia de fortalecimento, cinza é só escalada e só o contorno é descanso. A bolinha vermelha marca falha.\n\nToque num dia para ver tudo o que foi registrado."},
     {alvo:"#app .conq-grade",fase:2,t:"Conquistas",x:"Medalhas por constância, recordes, horas de parede... e umas surpresas escondidas. Toque numa medalha para ver quanto falta."}
@@ -2301,7 +2308,7 @@ function tourIniciar(t){
   try{history.pushState({tour:1},"")}catch(x){}
   document.body.insertAdjacentHTML("beforeend",'<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-bloq"></div>'+
     '<div class="tour-luz nada" style="top:50%;left:50%;width:0;height:0"></div><div class="tour-dedo" aria-hidden="true"></div><div class="tour-balao some"></div></div>');
-  ["#app","nav","#camada"].forEach(s=>{const e=$(s);if(e)e.inert=true});
+  ["#app","nav","#camada"].forEach(s=>{const e=$(s);if(e)e.inert=true});document.body.classList.add("em-tour");
   render.ultima=null;render();
   tourMostrar(1);
 }
@@ -2314,7 +2321,7 @@ function tourFechar(modo){
   gravar();
   Object.assign(U,TOUR.u,{folha:null,pd:null,armado:null});
   const el=$(".tour");if(el)el.remove();
-  ["#app","nav","#camada"].forEach(s=>{const e=$(s);if(e)e.inert=false});
+  ["#app","nav","#camada"].forEach(s=>{const e=$(s);if(e)e.inert=false});document.body.classList.remove("em-tour");
   /* tira do histórico o passo do tutorial (se foi o voltar que fechou, ele já saiu) */
   if(modo!=="voltar"){TOUR.ignorarPop=true;history.back()}
   render.ultima=null;render();
@@ -2342,8 +2349,8 @@ function tourMostrar(dir){
   }
   let el;
   if(p.varios){
-    TOUR.vis=p.varios.map(q=>({q:q,el:tourAlvo(q)})).filter(o=>o.el);TOUR.vi=0;
-    el=TOUR.vis.length?TOUR.vis[0].el:null;
+    TOUR.vis=p.varios.map(q=>({q:q})).filter(o=>o.q.card||tourAlvo(o.q));TOUR.vi=0;
+    el=TOUR.vis.length?tourItem(0):null;
     if(!el)return tourPasso(dir||1);
   }else{
     el=tourAlvo(p);
@@ -2383,9 +2390,16 @@ function tourCiclo(){
   TOUR.ciclo=setInterval(()=>tourVai((TOUR.vi+1)%TOUR.vis.length),p.rola?3600:2600);
 }
 /* rola: os itens ficam longe um do outro, então a tela rola até cada um e o balão fica do outro lado */
+/* item de um passo com vários: abre o exercício dele, se tiver, e acha o elemento na tela */
+function tourItem(i){
+  const q=TOUR.vis[i].q;
+  if((q.card||null)!==U.card){U.card=q.card||null;render.ultima=null;render()}
+  return TOUR.vis[i].el=tourAlvo(q);
+}
 function tourVai(i){
   const p=TOUR.passos[TOUR.i],tk=TOUR.tk;
-  TOUR.vi=i;TOUR.el=TOUR.vis[i].el;
+  TOUR.vi=i;TOUR.el=tourItem(i);
+  if(!TOUR.el)return;
   document.querySelectorAll(".tour-lista button").forEach((b,j)=>{b.classList.toggle("on",j===i);b.setAttribute("aria-pressed",String(j===i))});
   if(p.rola)tourRolar(tourY(TOUR.el),()=>{if(tk!==TOUR.tk)return;TOUR.lado=null;tourPos()});
   tourPos();
@@ -2464,7 +2478,7 @@ function tourPos(){
   Object.assign(luz.style,{top:y+"px",left:x+"px",width:w+"px",height:h+"px"});
   /* vários itens: o balão fica parado (no meio, ou do lado oposto ao item quando a tela rola) e só o recorte anda */
   if(p.varios){
-    if(p.rola&&!TOUR.lado)TOUR.lado=r.top+r.height/2<(lim.cima+lim.baixo)/2?"baixo":"cima";
+    if(p.rola&&!TOUR.lado)TOUR.lado=lim.baixo-r.bottom>=r.top-lim.cima?"baixo":"cima";
     const topo=!p.rola?(vh-bh)/2:TOUR.lado==="baixo"?lim.baixo-12-bh:lim.cima+12;
     bal.style.left=Math.max(16,(vw-bw)/2)+"px";bal.style.top=Math.max(8,Math.round(topo))+"px";return;
   }
