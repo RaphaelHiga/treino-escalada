@@ -125,6 +125,9 @@ p{margin:0}
 .fechar{margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
 .btn{display:flex;align-items:center;justify-content:center;width:100%;height:52px;border-radius:12px;background:var(--ink);color:#000;font-weight:700;font-size:16px}
 .btn.sec{background:var(--s2);color:var(--ink)}
+.btn.perigo{background:#E84855;color:#fff}
+.aj .btn.perigo{margin-top:12px}
+.folha .btn.apagar-bk{margin-top:10px}
 .btn:disabled{opacity:.35;cursor:default}
 .resumo-sess{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px}
 .resumo-sess b{font-weight:600}
@@ -525,6 +528,7 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .aj .btn.tour-rever{margin-top:12px}
 /* sobra embaixo durante o tutorial: até o último item pode subir para o alto da tela */
 body.em-tour #app{padding-bottom:60vh}
+body.em-tour .folha{padding-bottom:40vh}
 /* passo com vários itens: a lista acompanha o recorte que passeia */
 .tour-lista{list-style:none;display:grid;gap:4px;margin-top:2px}
 .tour-lista button{display:grid;gap:1px;width:100%;text-align:left;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.35;color:var(--ink2);border:1px solid transparent;transition:background .25s,border-color .25s,color .25s}
@@ -774,7 +778,7 @@ function carregar(){
   gravar(d);
   return d;
 }
-function gravar(d){gravar.v=(gravar.v||0)+1;if(TOUR.ativo)return;try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
+function gravar(d){gravar.v=(gravar.v||0)+1;if(TOUR.ativo||gravar.desligado)return;try{localStorage.setItem(K3,JSON.stringify(d||D))}catch(e){if(!gravar.falhou){gravar.falhou=true;toast("Não consegui salvar no aparelho. Exporte um backup.")}}}
 /* gravar.v conta as gravações: o render refaz a checagem de conquistas quando ela muda (e no
    primeiro render, que começa de render.v vazio) */
 gravar.v=0;
@@ -1946,7 +1950,16 @@ function telaAjustes(){
   h+='</tbody></table><div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos valores sugeridos</button></div></section>';
   h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><p style="margin-top:6px;color:var(--ink3)">'+(D.ultimoBackup?"Último backup: "+dm(D.ultimoBackup)+"/"+D.ultimoBackup.slice(0,4):"Nenhum backup ainda")+'</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
   h+='<section class="aj" id="aj-tutorial"><h2>Tutorial</h2><p>Esqueceu onde fica alguma coisa? O frango mostra tudo de novo, com dados de exemplo.</p><button class="btn sec tour-rever" data-a="tutorial">Ver tutorial de novo</button></section>';
+  h+='<section class="aj" id="aj-apagar"><h2>Apagar dados</h2><p>Apaga treinos, pesagens, conquistas e ajustes deste celular e deixa o app como novo.</p><button class="btn perigo" data-a="apagar">Apagar todos os dados</button></section>';
   return h;
+}
+
+/* zera o app: tira do aparelho tudo o que o app guardou (inclusive a versão antiga e a cópia de antes
+   de importar, senão elas voltariam no próximo carregamento) e recomeça como instalação nova */
+function apagarTudo(){
+  gravar.desligado=true;   /* nada mais grava até a página recarregar */
+  try{Object.keys(localStorage).filter(k=>k.indexOf("diario-escalada")===0).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  location.replace(location.pathname);
 }
 
 /* ================= folhas ================= */
@@ -2040,6 +2053,13 @@ function folha(){
     return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Sair do app?</h2>'+
       '<p class="sub">Você está na primeira tela. Toque em voltar de novo ou em Sair para fechar o app.</p>'+
       '<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Ficar</button><button class="btn" data-a="sair-ok">Sair</button></div></div></div>';
+  }
+  if(U.folha==="apagar"){
+    const tem=datas().length||D.pesos.length;
+    return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Apagar tudo?</h2>'+
+      (tem?'<p class="sub">Hoje o app tem '+esc(resumoDados(D))+'.</p>':"")+'<p class="sub">Tudo será apagado deste celular e o app volta a ser novo, com o tutorial do começo. Não dá para desfazer.</p>'+
+      (tem?'<p class="sub">Quer guardar? Exporte um backup antes.</p><button class="btn sec apagar-bk" data-a="exportar">Exportar backup</button>':"")+
+      '<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Cancelar</button><button class="btn perigo" data-a="apagar-ok">Apagar tudo</button></div></div></div>';
   }
   if(U.folha==="dia"&&U.diaAg)return folhaDia(U.diaAg);
   if(U.folha==="conq")return folhaConq(U.conq);
@@ -2259,6 +2279,8 @@ document.addEventListener("click",ev=>{
     case "aviso-fechar":U.avisoFechado=true;render();break;
     case "exportar":exportar();break;
     case "importar":$("#arquivo").click();break;
+    case "apagar":U.folha="apagar";U.abre=true;render();break;
+    case "apagar-ok":apagarTudo();break;
     case "tutorial":D.tutorial={};gravar();U.tela="treino";U.dia=hoje();U.card=null;U.modo=null;U.folha=null;render();break;
     case "cortes-padrao":D.cortes=JSON.parse(JSON.stringify(CORTES));verificarFases();gravar();toast("Cortes restaurados");render();break;
   }
@@ -2315,7 +2337,7 @@ const ROTEIROS={
       {alvo:"#app .fechar",r:"Fim do treino",x:"Toque aqui para registrar intensidade, dor e escalada. Não treinou? Registre o descanso."}]},
     {folha:"sessao",u:{dorSim:false,dorP:{}},alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
     {folha:"sessao",u:{dorSim:true,dorP:{},mao:"esquerda"},demo:"dor",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
-    {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},alvo:()=>{const b=blocoFolha("Escalou");return b&&[...b.querySelectorAll("h4,.tempos,.intens")]},t:"Escalada",x:"Escalou? Marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
+    {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},alvo:()=>blocoFolha("Escalou"),t:"Escalada",x:"Escalou? Toque em Sim e marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
     {alvo:"#app .eng",t:"Ajustes",x:"Cortes das fases, backup dos seus dados e o botão para ver este tutorial de novo."},
     {so:true,ok:"Bora treinar!",t:"Pronto, frango!"}
   ],
