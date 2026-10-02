@@ -300,7 +300,9 @@ button.pill{cursor:pointer}
 .cel-conq h2,.cel-conq p{opacity:0;transform:translateY(10px);transition:opacity .35s,transform .45s cubic-bezier(.3,1.6,.5,1)}
 .cel-conq.revela h2,.cel-conq.revela p{opacity:1;transform:none}
 .hist-tit{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.ag-dia.x::after{content:"";position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
+/* falha: ovinho vermelho no canto do dia */
+.ag-dia.x::after{content:"";position:absolute;top:3px;right:4px;width:8px;height:10px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
+.legenda i.ovo-falha{width:9px;height:11px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--d3)}
 .ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
 .ag-dia.fut{opacity:.3}
 .dia-cenas{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin:6px 0 4px}
@@ -1543,7 +1545,7 @@ function telaAgenda(){
     grade+='<button class="ag-dia '+classeDia(d)+'" data-a="diaag" data-v="'+d+'"'+(d>hoje()?" disabled":"")+' aria-label="'+n+' de '+MESES[m-1]+'">'+SELO+'<b>'+n+'</b></button>'}
   grade+='</div>';
   h+='<p class="sec-sub">'+tr+(tr===1?" dia":" dias")+' com treino · '+de+' de descanso'+(fa?' · <span class="fal">'+fa+(fa===1?" falha":" falhas")+'</span>':"")+'</p>'+grade+
-    '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span></div>'+
+    '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i class="ovo-falha"></i>falha</span></div>'+
     '<p class="dica" style="margin-top:14px;text-align:center">Toque num dia para ver tudo o que foi registrado.</p>'+secaoConquistas();
   return h;
 }
@@ -2067,7 +2069,7 @@ function folha(){
       '<li><b>Falhas nos últimos 30 dias</b>'+esc(txtFal)+'</li>'+
       '<li><b>O que conta</b>Qualquer dia com fortalecimento (feito ou falha) ou escalada. Dia sem registro, ou registrado só com dor ou como descanso, é descanso e interrompe a sequência.</li></ul>'+
       '<h3 class="sec-t" style="font-size:22px;margin:18px 0 2px">Últimos 14 dias</h3><div class="seq-dias">'+dias+'</div>'+
-      '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span></div>'+
+      '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i class="ovo-falha"></i>falha</span></div>'+
       '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
   }
   if(U.folha==="sair"){
