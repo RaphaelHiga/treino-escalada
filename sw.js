@@ -2,9 +2,9 @@
 // Guarda uma cópia do app no aparelho para ele abrir sem internet.
 // Com internet boa, busca a versão mais nova. Se a rede demorar (sinal fraco no ginásio),
 // abre na hora com a cópia guardada e atualiza em segundo plano para a próxima vez.
-// Se você publicar uma atualização, aumente o número em CACHE (v45 -> v46).
+// Se você publicar uma atualização, aumente o número em CACHE (v46 -> v47).
 // As fontes ficam no próprio app e entram aqui: o app abre com a fonte certa mesmo sem sinal.
-const CACHE = "diario-escalada-app-v45";
+const CACHE = "diario-escalada-app-v46";
 const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
   "fontes/archivo.woff2", "fontes/bebas-neue.woff2"];
 const ESPERA_MS = 2500;
