@@ -209,7 +209,6 @@ button.pill{cursor:pointer}
 .seq-dias div{display:grid;justify-items:center;gap:3px;font-size:11px;color:var(--ink3)}
 .seq-dias .ag-dia{display:block;width:100%;max-width:46px;background:var(--s2)}
 .seq-dias .ag-dia .olho{fill:var(--s2)}
-.seq-dias .ag-dia.x::after{box-shadow:0 0 0 1.5px var(--s2)}
 .eng{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 10px;border-radius:999px;background:var(--s2);color:var(--gema);font-weight:700;font-size:14px;box-shadow:inset 0 0 0 1.5px var(--gema)}
 .eng svg{width:22px;height:22px}
 .mes-nav{display:flex;align-items:center;gap:10px;margin-top:8px}
@@ -301,7 +300,7 @@ button.pill{cursor:pointer}
 .cel-conq.revela h2,.cel-conq.revela p{opacity:1;transform:none}
 .hist-tit{display:flex;align-items:center;justify-content:space-between;gap:12px}
 /* falha: ovinho vermelho rachado no canto do dia (a rachadura é um zigue-zague escuro de lado a lado) */
-.ag-dia.x::after{content:"";position:absolute;top:3px;right:4px;width:10px;height:12px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpolyline points='0,12.5 4,9 7.5,13 11,8.5 14.5,12.5 20,9' fill='none' stroke='%231b1a17' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat,var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
+.ag-dia.x::after{content:"";position:absolute;top:3px;right:4px;width:10px;height:12px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpolyline points='0,12.5 4,9 7.5,13 11,8.5 14.5,12.5 20,9' fill='none' stroke='%231b1a17' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat,var(--d3)}
 .legenda i.ovo-falha{width:10px;height:12px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpolyline points='0,12.5 4,9 7.5,13 11,8.5 14.5,12.5 20,9' fill='none' stroke='%231b1a17' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat,var(--d3);vertical-align:-2px}
 .ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
 .ag-dia.fut{opacity:.3}
