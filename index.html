@@ -257,7 +257,19 @@ button.pill{cursor:pointer}
 .moeda .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .moeda .verso{transform:rotateY(180deg)}
 .moeda .med.g{width:180px;height:180px}
-.cel-conq.virada .moeda{transform:rotateY(180deg)}
+.moeda.virada{transform:rotateY(180deg)}
+/* várias conquistas juntas: moedas menores lado a lado, com nome e nível embaixo */
+.moeda-w.varias{display:flex;flex-wrap:wrap;justify-content:center;gap:16px 6px;max-width:340px}
+.moeda-i{position:relative;display:grid;justify-items:center;align-content:start;gap:14px;width:104px;text-align:center}
+.varias .moeda{width:88px;height:88px}
+.varias .moeda .med{width:88px;height:88px}
+.varias .moeda .med em{font-size:11px}
+.muitas .moeda-i{width:96px}.muitas .moeda,.muitas .moeda .med{width:72px;height:72px}
+.moeda-i b{font-size:12px;line-height:1.2;font-weight:700;color:#fff}
+.moeda-i span{margin-top:-10px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.moeda-i .nv0{color:#e09a5f}.moeda-i .nv1{color:#cfd5dc}.moeda-i .nv2{color:#FFC83D}
+.cel-conq .moeda-i b,.cel-conq .moeda-i span{opacity:0;transition:opacity .35s}
+.cel-conq.revela .moeda-i b,.cel-conq.revela .moeda-i span{opacity:1}
 .cel-conq.entra .moeda-w{animation:surge .5s cubic-bezier(.3,1.6,.5,1)}
 .cel-conq.revela .moeda-w{animation:bump .55s cubic-bezier(.3,1.8,.5,1)}
 @keyframes surge{from{transform:scale(.35);opacity:0}}
@@ -1101,7 +1113,7 @@ function salvarSessao(){
   /* só agora, depois de fortalecimento, dor e escalada, as conquistas (as que ainda valem) */
   const pend=(D.conqPend||[]).filter(conqNoTopo);
   if(D.conqPend){delete D.conqPend;gravar()}
-  U.fila=U.fila.concat(pend.map(k=>({tipo:"conquista",id:k})));
+  filaConquistas(pend);
   toast(descanso?"Descanso registrado":"Sessão salva");render();
 }
 let tArm;
@@ -1630,6 +1642,14 @@ function calcConquistas(){
   pr("soesc",soEsc,5);pr("dieta",D.pesos.length,5);pr("curioso",vis,5);
   return R;
 }
+/* conquistas batidas juntas viram uma comemoração só ({ids}); se a última da fila já é de
+   conquistas, as novas entram nela */
+function filaConquistas(ids){
+  if(!ids.length)return;
+  const ult=U.fila[U.fila.length-1];
+  if(ult&&ult.tipo==="conquista"&&U.fila.length>1){ult.ids=ult.ids.concat(ids.filter(k=>ult.ids.indexOf(k)<0));return}
+  U.fila.push({tipo:"conquista",ids:ids});
+}
 /* acompanha o histórico: conquista nova entra na fila de comemoração (uma vez por uso do app)
    e, se o registro que a gerou for excluído, ela volta a ficar bloqueada.
    segurar=true: veio do treino (séries ou sessão). Fica em D.conqPend e só é comemorada ao
@@ -1646,9 +1666,9 @@ function checarConquistas(segurar){
     if(tinha===d)return;
     D.conq[k]=d;mudou=true;
     if(!tinha&&!primeira&&!celebrados.has("conq:"+k))novas.push(k)});
-  novas.filter(conqNoTopo).forEach(k=>{celebrados.add("conq:"+k);
-    if(!segurar)U.fila.push({tipo:"conquista",id:k});
-    else if((D.conqPend=D.conqPend||[]).indexOf(k)<0)D.conqPend.push(k)});
+  const topo=novas.filter(conqNoTopo);topo.forEach(k=>celebrados.add("conq:"+k));
+  if(!segurar)filaConquistas(topo);
+  else topo.forEach(k=>{if((D.conqPend=D.conqPend||[]).indexOf(k)<0)D.conqPend.push(k)});
   if(mudou)gravar();
   return R;
 }
@@ -1829,14 +1849,15 @@ function medalha(c,o){
 /* celebração: cadeado treme e cai, a medalha gira e revela a cena, depois raios e confete */
 function animarConquista(){
   const cel=document.querySelector("#celeb .cel-conq");if(!cel)return;
-  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){cel.classList.add("virada","revela");return}
-  const cad=cel.querySelector(".frente .cad");
+  const ms=[...cel.querySelectorAll(".moeda")],passo=ms.length>1?380:0;
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){ms.forEach(m=>m.classList.add("virada"));cel.classList.add("revela");return}
   cel.classList.add("entra");
-  setTimeout(()=>{if(cad)cad.classList.add("treme")},650);
-  setTimeout(()=>{if(cad)cad.classList.add("cai")},1200);
-  setTimeout(()=>cel.classList.add("virada"),1450);
+  ms.forEach((m,i)=>{const cad=m.querySelector(".frente .cad"),t=i*passo;
+    setTimeout(()=>{if(cad)cad.classList.add("treme")},650+t);
+    setTimeout(()=>{if(cad)cad.classList.add("cai")},1200+t);
+    setTimeout(()=>m.classList.add("virada"),1450+t)});
   setTimeout(()=>{if(!cel.isConnected)return;cel.classList.add("revela");cel.insertAdjacentHTML("afterbegin",confete());
-    if(navigator.vibrate)try{navigator.vibrate([10,60,20])}catch(x){}},1850);
+    if(navigator.vibrate)try{navigator.vibrate([10,60,20])}catch(x){}},1850+(ms.length-1)*passo);
 }
 /* progresso até o próximo nível (ou até a conquista, se não tem níveis) */
 function proxConq(c,R){
@@ -2043,10 +2064,17 @@ function dadosCena(ev){
   else if(ev.tipo==="forca"){tit="Mais forte";txt=ev.texto;arte=ave(e,{fase:st.fase,flex:true,cur:st.cur});cls="festa";extra='<span class="flutua">+'+nf1.format(ev.ganho)+'%</span>'}
   else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida no "+e.nome+": "+D.cortes[e.k][ev.para-1]+"% do peso. Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
   else if(ev.tipo==="regrediu"){const u=ultimoTreino(e);tit="Enferrujou";txt=(u?"Parado há "+diasEntre(u,hoje())+" dias no "+e.nome+", o frango":"O frango do "+e.nome)+" voltou para "+FASES[ev.para]+". Bata o corte de novo para ele subir.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
-  else if(ev.tipo==="conquista"){const m=CHAVE_CONQ[ev.id],c=m.c,i=m.i;
+  else if(ev.tipo==="conquista"){
     /* subir de nível: a moeda começa no nível de antes e vira para o novo */
-    tit=i>0?"Subiu de nível!":"Conquista!";txt=c.n+(i>=0?" · "+NIVEIS[i]:"")+": "+m.x.d;
-    arte='<div class="moeda-w"><div class="raios"></div><div class="moeda"><div class="face frente">'+medalha(c,{g:1,nivel:i-1})+'</div><div class="face verso">'+medalha(c,{g:1,vivo:1,nivel:Math.max(i,0)})+'</div></div></div>'}
+    const ms=ev.ids.map(k=>CHAVE_CONQ[k]).filter(Boolean),moeda=(m,o)=>'<div class="moeda"><div class="face frente">'+medalha(m.c,Object.assign({nivel:m.i-1},o))+'</div><div class="face verso">'+medalha(m.c,Object.assign({vivo:1,nivel:Math.max(m.i,0)},o))+'</div></div>';
+    if(ms.length===1){const m=ms[0];
+      tit=m.i>0?"Subiu de nível!":"Conquista!";txt=m.c.n+(m.i>=0?" · "+NIVEIS[m.i]:"")+": "+m.x.d;
+      arte='<div class="moeda-w"><div class="raios"></div>'+moeda(m,{g:1})+'</div>'}
+    else{
+      /* várias no mesmo registro: as medalhas lado a lado, virando uma depois da outra */
+      tit=ms.length+" conquistas!";txt="Tudo isso num registro só. Toque numa medalha no Histórico para ver os detalhes.";
+      arte='<div class="moeda-w varias'+(ms.length>4?" muitas":"")+'"><div class="raios"></div>'+ms.map(m=>'<div class="moeda-i">'+moeda(m,{})+
+        '<b>'+esc(m.c.n)+'</b>'+(m.i>=0?'<span class="nv'+m.i+'">'+NIVEIS[m.i]+'</span>':"")+'</div>').join("")+'</div>'}}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit=["Dedinho sensível","Dedo reclamando","Dedo em greve"][Math.min(3,ev.nivel)-1];txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
