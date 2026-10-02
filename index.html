@@ -1754,6 +1754,11 @@ const ARTE_CONQ={
 /* conquistas em série: aro bronze, prata e ouro, com 1 a 3 estrelas */
 const M_NIVEL={seq7:0,seq15:1,seq30:2,vet50:0,vet100:1,vet200:2,h10:0,h50:1,h100:2};
 const M_PONTOS=(()=>{let h="";for(let i=0;i<30;i++){const a=i/30*Math.PI*2;h+='<circle cx="'+(53*Math.cos(a)).toFixed(2)+'" cy="'+(53*Math.sin(a)).toFixed(2)+'" r="1.1" fill="#000" opacity=".22"/>'}return h})();
+/* conquista surpresa bloqueada: ovo pintadinho com um "?" no meio */
+const M_OVO='<g transform="translate(0 -5)"><path d="M0 -34 C16 -34 27 -8 27 10 C27 28 15 38 0 38 C-15 38 -27 28 -27 10 C-27 -8 -16 -34 0 -34z" fill="#3a3833" stroke="#4a4740" stroke-width="1.6"/>'+
+  '<path d="M-17 -6 Q-15 -22 -6 -29" stroke="#fff" stroke-opacity=".12" stroke-width="3.5" fill="none" stroke-linecap="round"/>'+
+  '<circle cx="14" cy="-14" r="2.6" fill="#2e2c28"/><circle cx="-18" cy="20" r="2.2" fill="#2e2c28"/><circle cx="17" cy="24" r="1.8" fill="#2e2c28"/><circle cx="-8" cy="-22" r="1.6" fill="#2e2c28"/>'+
+  '<text y="22" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="44" fill="#1c1b19">?</text></g>';
 /* o: {g: grande, vivo: cena animada, fechada: desenha bloqueada mesmo se já tiver} */
 function medalha(c,o){
   o=o||{};
@@ -1761,7 +1766,7 @@ function medalha(c,o){
   let s='<svg class="msc'+(o.vivo&&ok?"":" mini")+'" viewBox="-60 -60 120 120" aria-hidden="true">'+
     '<circle r="58" fill="'+(ok?"url(#md-"+(nv===undefined?"gema":["bronze","prata","ouro"][nv])+")":"#2c2b28")+'"/>'+(ok?M_PONTOS:"")+
     '<circle r="49.5" fill="#000" opacity=".4"/><circle r="48" fill="'+(ok?a[0]:"#141412")+'"/>';
-  if(seg)s+='<text y="22" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="64" fill="#2e2d29">?</text>';
+  if(seg)s+=M_OVO;
   else s+='<g clip-path="url(#md-disco)"><g class="ave" transform="translate(0 6) scale(.55)"'+(ok?"":' filter="url(#md-silh)"')+'>'+a[1]()+'</g></g>';
   if(ok){
     s+='<path d="M-40 -25 A47 47 0 0 1 -12 -45" stroke="#fff" stroke-opacity=".22" stroke-width="3" fill="none" stroke-linecap="round"/>';
