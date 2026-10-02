@@ -207,10 +207,9 @@ button.pill{cursor:pointer}
 .seq-top b{font-family:var(--disp);font-size:64px;font-weight:400;line-height:.9}
 .seq-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
 .seq-dias div{display:grid;justify-items:center;gap:3px;font-size:11px;color:var(--ink3)}
-.seq-dias i{width:100%;max-width:38px;aspect-ratio:1;border-radius:10px;background:var(--s2);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:600;color:var(--ink3)}
-.seq-dias i.f{background:var(--gema);color:var(--gema-ink)}
-.seq-dias i.e{background:var(--ink2);color:#000}
-.seq-dias i{position:relative}
+.seq-dias .ag-dia{display:block;width:100%;max-width:46px;background:var(--s2)}
+.seq-dias .ag-dia .olho{fill:var(--s2)}
+.seq-dias .ag-dia.x::after{box-shadow:0 0 0 1.5px var(--s2)}
 .eng{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 10px;border-radius:999px;background:var(--s2);color:var(--gema);font-weight:700;font-size:14px;box-shadow:inset 0 0 0 1.5px var(--gema)}
 .eng svg{width:22px;height:22px}
 .mes-nav{display:flex;align-items:center;gap:10px;margin-top:8px}
@@ -309,9 +308,6 @@ button.pill{cursor:pointer}
 .dia-cena .msc-g{width:100%;max-width:120px}.dia-cena .msc-g svg{width:100%;height:auto;display:block}
 .dia-cena b{font-family:var(--disp);font-weight:400;font-size:20px;color:var(--gema);line-height:1}
 .dia-cena span{font-size:11px;color:var(--ink3);line-height:1.3}
-.seq-dias i.x::after{content:"";position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--d3);box-shadow:0 0 0 1.5px var(--s1)}
-.seq-dias i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink3)}
-.seq-dias i.hoje{box-shadow:0 0 0 2px var(--ink)}
 .sec-sub{font-size:13px;color:var(--ink3);margin-bottom:8px}
 .estagios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .estagios div{display:grid;justify-items:center;align-content:start;gap:2px;text-align:center}
@@ -2054,8 +2050,9 @@ function folha(){
   if(U.folha==="seq"){
     const n=sequencia(),hojeFeito=treinou(D.sessoes[hoje()]),melhor=melhorSequencia(),prox=MARCOS_SEQ.find(m=>m>n);
     const falhouEm=s=>s?EX.filter(e=>slotsDe(e).some(sl=>{const a=(s.s||{})[sl]||[];return a.length===3&&a.every(x=>x&&!x.ok)})):[];
-    let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k),s=D.sessoes[d],c=temSeries(s)?"f":(s&&s.escalada)?"e":descansou(d)?"d":"";
-      dias+='<div><i class="'+c+(falhouEm(s).length?" x":"")+(k?"":" hoje")+'">'+Number(d.slice(8))+'</i>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
+    /* mesmo bloco do Histórico: número no canto e o selo do frango na cor do dia */
+    let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k);
+      dias+='<div><span class="ag-dia '+classeDia(d)+'">'+SELO+'<b>'+Number(d.slice(8))+'</b></span>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
     let mes=0,desc=0;for(let k=0;k<30;k++){const d=somaDias(hoje(),-k);if(treinou(D.sessoes[d]))mes++;else if(descansou(d))desc++}
     const hojeDesc=!hojeFeito&&D.sessoes[hoje()]&&D.sessoes[hoje()].descanso;
     const fal={};let nFal=0,ultFal=null;datas().forEach(d=>{if(d<=somaDias(hoje(),-30))return;falhouEm(D.sessoes[d]).forEach(e=>{fal[e.nome]=(fal[e.nome]||0)+1;nFal++;ultFal=d})});
@@ -2070,7 +2067,7 @@ function folha(){
       '<li><b>Falhas nos últimos 30 dias</b>'+esc(txtFal)+'</li>'+
       '<li><b>O que conta</b>Qualquer dia com fortalecimento (feito ou falha) ou escalada. Dia sem registro, ou registrado só com dor ou como descanso, é descanso e interrompe a sequência.</li></ul>'+
       '<h3 class="sec-t" style="font-size:22px;margin:18px 0 2px">Últimos 14 dias</h3><div class="seq-dias">'+dias+'</div>'+
-      '<div class="legenda"><span><i style="background:var(--gema)"></i>fortalecimento</span><span><i style="background:var(--ink2)"></i>só escalada</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--ink3)"></i>descanso</span></div>'+
+      '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i style="background:var(--d3);border-radius:50%"></i>falha</span></div>'+
       '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
   }
   if(U.folha==="sair"){
