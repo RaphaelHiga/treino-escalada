@@ -168,6 +168,18 @@ p{margin:0}
 .evo-vazia{display:grid;justify-items:center;text-align:center;gap:10px;padding:8px 0 10px}
 .evo-vazia .msc-g{width:150px;height:150px}
 .evo-vazia .msc-g svg{width:100%;height:100%;display:block}
+/* ovo esperando: balança, pula e a rachadura aparece; os risquinhos dos lados marcam o tremor */
+.ovo-esp .ovo-casca,.ovo-esp .ovo-sombra{transform-box:fill-box;transform-origin:50% 100%}
+.ovo-esp .ovo-sombra{transform-origin:50% 50%}
+.ovo-esp .ovo-casca{animation:ovo-espera 3.4s ease-in-out .4s infinite}
+.ovo-esp .ovo-sombra{animation:ovo-sombra 3.4s ease-in-out .4s infinite}
+.ovo-esp .ovo-tremor{opacity:0;animation:ovo-tremor 3.4s ease-in-out .4s infinite}
+.ovo-esp .ovo-racha{stroke-dasharray:100;stroke-dashoffset:100;animation:ovo-racha .9s ease-out 1.2s forwards}
+@keyframes ovo-espera{0%,50%,100%{transform:none}55%{transform:rotate(-8deg)}61%{transform:rotate(8deg)}67%{transform:rotate(-6deg)}73%{transform:rotate(5deg)}79%{transform:rotate(0)}86%{transform:translateY(-14px)}93%{transform:translateY(0) scale(1.04,.96)}97%{transform:none}}
+@keyframes ovo-sombra{0%,79%,100%{transform:none}86%{transform:scale(.75);opacity:.2}93%{transform:scale(1.08)}}
+@keyframes ovo-tremor{0%,52%,82%,100%{opacity:0}58%,76%{opacity:.9}}
+@keyframes ovo-racha{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.ovo-esp .ovo-racha{stroke-dashoffset:0}}
 .evo-vazia h2{font-size:32px;margin-top:4px}
 .evo-vazia p{font-size:14px;color:var(--ink2);max-width:32ch}
 .evo-vazia .btn{margin-top:8px}
@@ -1439,9 +1451,21 @@ function resumoSessoes(ds){
   const n=ds.length,nf=ds.reduce((t,d)=>t+EX.filter(e=>falhouEx(D.sessoes[d],e)).length,0),nd=ds.filter(d=>D.sessoes[d].descanso).length;
   return n+(n>1?" sessões":" sessão")+(nf?' · <span class="fal">'+nf+(nf>1?" falhas":" falha")+'</span>':"")+(nd?" · "+nd+(nd>1?" descansos":" descanso"):"");
 }
+/* Evolução sem nenhum registro: o ovo ainda não chocou. Balança, dá um pulinho e já tem uma rachadura */
+function ovoEspera(){
+  return '<svg class="msc ovo-esp" viewBox="66 8 248 248" aria-hidden="true"><circle cx="190" cy="132" r="118" fill="#2E4057"/>'+
+    '<ellipse class="ovo-sombra" cx="190" cy="218" rx="46" ry="7" fill="#000" opacity=".35"/>'+
+    '<path class="ovo-tremor" d="M104 120 q-10 14 0 28 M92 112 q-14 22 0 44 M276 120 q10 14 0 28 M288 112 q14 22 0 44" stroke="#FFC83D" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+    '<g transform="translate(190 218) scale(.82) translate(-190 -218)"><g class="ovo-casca">'+
+    '<path d="'+OVO_CASCA+'" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="4"/>'+
+    '<ellipse cx="160" cy="186" rx="7" ry="5" fill="#FFE29A"/><ellipse cx="214" cy="196" rx="5" ry="4" fill="#FFE29A"/><ellipse cx="208" cy="92" rx="6" ry="4.5" fill="#FFE29A"/><ellipse cx="150" cy="126" rx="4.5" ry="3.5" fill="#FFE29A"/>'+
+    '<path d="M150 90 Q160 70 176 62" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>'+
+    '<path class="ovo-racha" d="M214 70 L204 90 L218 104 L206 124 L216 142 M218 104 L232 110" fill="none" stroke="#2B2B2B" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" pathLength="100"/>'+
+    '</g></g></svg>';
+}
 function telaEvolucao(){
   if(!datas().length&&!D.pesos.length)return '<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><h1>Evolução</h1></div></header>'+
-    '<section class="evo-vazia"><div class="msc-g">'+ave({cor:"#2E4057"},{fase:0})+'</div><h2>Ainda sem treinos</h2>'+
+    '<section class="evo-vazia"><div class="msc-g">'+ovoEspera()+'</div><h2>Ainda sem treinos</h2>'+
     '<p>Registre o peso e as séries na tela Treino. A força de cada exercício, o peso e as sessões aparecem aqui.</p>'+
     '<button class="btn" data-a="tela" data-v="treino">Registrar primeiro treino</button></section>'+estagios();
   let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><h1>Evolução</h1><div class="dia"><span>Melhor marca dos últimos '+JANELA+' dias, em % do peso</span></div></div></header>';
@@ -2337,7 +2361,7 @@ const ROTEIROS={
       {alvo:"#app .fechar",r:"Fim do treino",x:"Toque aqui para registrar intensidade, dor e escalada. Não treinou? Registre o descanso."}]},
     {folha:"sessao",u:{dorSim:false,dorP:{}},alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
     {folha:"sessao",u:{dorSim:true,dorP:{},mao:"esquerda"},demo:"dor",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
-    {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},alvo:()=>blocoFolha("Escalou"),t:"Escalada",x:"Escalou? Toque em Sim e marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
+    {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},demo:"escalada",alvo:()=>blocoFolha("Escalou"),t:"Escalada",x:"Escalou? Toque em Sim e marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
     {alvo:"#app .eng",t:"Ajustes",x:"Cortes das fases, backup dos seus dados e o botão para ver este tutorial de novo."},
     {so:true,ok:"Bora treinar!",t:"Pronto, frango!"}
   ],
@@ -2617,6 +2641,23 @@ const DEMOS={
       [500,()=>dedoEntra(seg,16,22)],
       [650,toque],[1000,toque],[1000,toque],[1000,toque],
       [700,dedoSai]
+    ],true);
+  },
+  /* escalada: Sim, depois um tempo e uma intensidade. Mexe só nos botões (aria-pressed), sem mudar U */
+  escalada(){
+    const bt=(a,v)=>document.querySelector('.folha [data-a="'+a+'"][data-v="'+v+'"]'),sim=bt("esc","1"),t2=bt("esc-min","120"),forte=bt("esc-int","intensa");
+    if(!sim||!t2||!forte)return;
+    const marca=(a,v)=>document.querySelectorAll('.folha [data-a="'+a+'"]').forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v)));
+    const volta=()=>{marca("esc-min",String(U.escMin));marca("esc-int",U.escInt);[sim,t2,forte].forEach(b=>b.classList.remove("tour-aperta"))};
+    TOUR.desfaz=volta;
+    tourAnima([
+      [500,()=>{volta();dedoEntra(sim,30,14)}],
+      [650,()=>{dedoToca(sim);selPop("esc","1")}],
+      [800,()=>dedoIr(t2,30,14)],
+      [650,()=>{dedoToca(t2);marca("esc-min","120");selPop("esc-min","120")}],
+      [800,()=>dedoIr(forte,90,10)],
+      [650,()=>{dedoToca(forte);marca("esc-int","intensa");selPop("esc-int","intensa");tourFaiscas(forte,9,["#FFC83D","#fff3c4"],34)}],
+      [1700,dedoSai]
     ],true);
   }
 };
