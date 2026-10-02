@@ -380,6 +380,15 @@ nav button.centro[aria-current=page] svg{background:var(--gema);color:var(--gema
 .cel h2{font-size:58px;color:var(--gema)}
 .cel p{font-size:16px;color:var(--ink);max-width:30ch}
 .cel .btn{width:200px;margin-top:10px}
+/* resumo do dia: as cenas da sessão em fila, uma embaixo da outra */
+.ses-lista{display:grid;gap:10px;width:min(340px,calc(100vw - 48px));text-align:left;margin-bottom:6px}
+.ses-i{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;padding:8px 14px 8px 8px;border-radius:18px;background:#1b1a17;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);animation:ses-entra .45s cubic-bezier(.3,1.5,.5,1) both}
+.cel-ses h2{order:-1;font-size:52px;margin-bottom:4px}
+.ses-i:nth-child(2){animation-delay:.18s}.ses-i:nth-child(3){animation-delay:.36s}
+@keyframes ses-entra{from{opacity:0;transform:translateY(16px) scale(.96)}}
+.ses-i .msc-g{width:84px;height:84px}.ses-i .msc-g svg{width:100%;height:100%;display:block}
+.ses-i b{display:block;font-family:var(--disp);font-weight:400;font-size:26px;line-height:1;color:var(--gema)}
+.ses-i span{display:block;margin-top:4px;font-size:13px;line-height:1.3;color:var(--ink2)}
 .cel .chamao{width:120px;height:150px;animation:chamao 1.2s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes chamao{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.08) rotate(3deg)}}
 .cel .contagem{font-family:var(--disp);font-size:96px;line-height:.8;color:var(--ink)}
@@ -1106,9 +1115,9 @@ function salvarSessao(){
      sem fortalecimento ("Como foi o dia?") é escalada, dor */
   const escal=s.escalada?{tipo:"escalada",min:s.escalada.min,int:s.escalada.int}:{tipo:"semescalada"};
   const dorEv=s.dor?{tipo:"dor",nivel:Math.max.apply(null,Object.keys(s.dor).map(k=>s.dor[k]))}:{tipo:"semdor"};
+  /* as cenas da sessão vão juntas numa tela só, o "Resumo do dia" */
   if(descanso)U.fila.push({tipo:"descanso"});
-  else if(forta)U.fila.push({tipo:"esforco",nota:s.esforco},dorEv,escal);
-  else U.fila.push.apply(U.fila,(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv]));
+  else U.fila.push({tipo:"sessao",evs:forta?[{tipo:"esforco",nota:s.esforco},dorEv,escal]:(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv])});
   U.fila=U.fila.concat(eventosSequencia(antes));
   /* só agora, depois de fortalecimento, dor e escalada, as conquistas (as que ainda valem) */
   const pend=(D.conqPend||[]).filter(conqNoTopo);
@@ -2075,6 +2084,9 @@ function dadosCena(ev){
       tit=ms.length+" conquistas!";txt="Tudo isso num registro só. Toque numa medalha no Histórico para ver os detalhes.";
       arte='<div class="moeda-w varias'+(ms.length>4?" muitas":"")+'"><div class="raios"></div>'+ms.map(m=>'<div class="moeda-i">'+moeda(m,{})+
         '<b>'+esc(m.c.n)+'</b>'+(m.i>=0?'<span class="nv'+m.i+'">'+NIVEIS[m.i]+'</span>':"")+'</div>').join("")+'</div>'}}
+  else if(ev.tipo==="sessao"){tit="Resumo do dia";
+    arte='<div class="ses-lista">'+ev.evs.map(x=>{const c=dadosCena(Object.assign({dia:dAlvo},x));
+      return '<div class="ses-i"><div class="msc-g">'+c.arte+'</div><div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div></div>'}).join("")+'</div>'}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit=["Dedinho sensível","Dedo reclamando","Dedo em greve"][Math.min(3,ev.nivel)-1];txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
@@ -2095,9 +2107,9 @@ function dadosCena(ev){
 function celebracao(){
   const ev=U.fila[0];if(!ev)return "";
   const c=dadosCena(ev),arte=c.arte,tit=c.tit,txt=c.txt,extra=c.extra,cls=c.cls;
-  return '<div class="cel'+(ev.tipo==="conquista"?" cel-conq":"")+'" data-a="cel" role="dialog" aria-modal="true" aria-labelledby="cel-t">'+extra+'<div class="cel-box">'+
-    (ev.tipo==="sequencia"||ev.tipo==="conquista"?arte:'<div class="msc-g '+cls+'" data-evo="'+(ev.tipo==="evoluiu"?ev.para:"")+'">'+arte+'</div>')+
-    '<h2 id="cel-t">'+tit+'</h2><p>'+esc(txt)+'</p><button class="btn" data-a="cel">Continuar</button></div></div>';
+  return '<div class="cel'+(ev.tipo==="conquista"?" cel-conq":ev.tipo==="sessao"?" cel-ses":"")+'" data-a="cel" role="dialog" aria-modal="true" aria-labelledby="cel-t">'+extra+'<div class="cel-box">'+
+    (ev.tipo==="sequencia"||ev.tipo==="conquista"||ev.tipo==="sessao"?arte:'<div class="msc-g '+cls+'" data-evo="'+(ev.tipo==="evoluiu"?ev.para:"")+'">'+arte+'</div>')+
+    '<h2 id="cel-t">'+tit+'</h2>'+(txt?'<p>'+esc(txt)+'</p>':"")+'<button class="btn" data-a="cel">Continuar</button></div></div>';
 }
 function animarEvolucao(){
   const g=document.querySelector(".cel [data-evo]");if(!g||g.dataset.evo==="")return;
