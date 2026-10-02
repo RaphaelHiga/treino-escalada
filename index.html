@@ -241,6 +241,16 @@ button.pill{cursor:pointer}
 .conq-folha .med{margin:8px auto 22px}
 .conq-st{font-weight:700;color:var(--ink2);margin:10px 0 8px}
 .conq-st.ok{color:var(--gema)}
+.niveis{list-style:none;margin:6px 0 18px;padding:0;display:grid;gap:8px;text-align:left}
+.niveis li{display:grid;gap:3px;padding:10px 12px 10px 14px;border-radius:12px;background:var(--s2);border-left:4px solid #5a5a5a;color:var(--ink3)}
+.niveis li.ok{color:var(--ink2)}
+.niveis li.nv0.ok{border-left-color:#c97b3f}.niveis li.nv1.ok{border-left-color:#bfc6cf}.niveis li.nv2.ok{border-left-color:#FFC83D}
+.niveis b{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+.niveis li:not(.ok) b{color:var(--ink3)}
+.niveis span{font-size:13px;line-height:1.35}
+.niveis em{font-style:normal;font-weight:700;font-size:12px;color:var(--ink2)}
+.niveis li.ok em{color:var(--gema)}
+.niveis .conq-bar{width:100%;margin-top:3px}
 /* celebração de conquista: o cadeado cai, a medalha gira como moeda e revela a cena */
 .moeda-w{position:relative;perspective:800px;margin:6px 0 16px}
 .moeda{position:relative;width:180px;height:180px;transform-style:preserve-3d;transition:transform .95s cubic-bezier(.25,1.35,.45,1)}
@@ -1089,7 +1099,7 @@ function salvarSessao(){
   else U.fila.push.apply(U.fila,(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv]));
   U.fila=U.fila.concat(eventosSequencia(antes));
   /* só agora, depois de fortalecimento, dor e escalada, as conquistas (as que ainda valem) */
-  const pend=(D.conqPend||[]).filter(k=>D.conq&&D.conq[k]);
+  const pend=(D.conqPend||[]).filter(conqNoTopo);
   if(D.conqPend){delete D.conqPend;gravar()}
   U.fila=U.fila.concat(pend.map(k=>({tipo:"conquista",id:k})));
   toast(descanso?"Descanso registrado":"Sessão salva");render();
@@ -1494,87 +1504,129 @@ function telaAgenda(){
 }
 /* ================= conquistas =================
    Tudo é calculado a partir do histórico. A data de cada conquista fica guardada em D.conq
-   (uma vez conquistada, não se perde). s:1 = conquista surpresa: bloqueada aparece como "???". */
+   (uma vez conquistada, não se perde). s:1 = conquista surpresa: bloqueada aparece como um ovo.
+   Medalha com niveis: uma medalha só que sobe de bronze para prata e ouro. Cada nível tem a
+   própria chave em D.conq, então dá para saber quando cada um foi batido. */
 const CONQ=[
   {k:"primeiro",n:"Primeiro passo",r:"1º",d:"Registrou o primeiro treino."},
-  {k:"seq7",n:"Semana de fogo",r:"7 dias",d:"7 dias seguidos com treino."},
-  {k:"seq15",n:"Quinzena quente",r:"15 dias",d:"15 dias seguidos com treino."},
-  {k:"seq30",n:"Mês em chamas",r:"30 dias",d:"30 dias seguidos com treino."},
+  {k:"seq",n:"Sequência de fogo",niveis:[
+    {k:"seq7",r:"7 dias",d:"7 dias seguidos com treino."},
+    {k:"seq15",r:"15 dias",d:"15 dias seguidos com treino."},
+    {k:"seq30",r:"30 dias",d:"30 dias seguidos com treino."}]},
   {k:"mes12",n:"Mês completo",r:"12/mês",d:"12 dias com treino no mesmo mês."},
-  {k:"vet50",n:"Veterano",r:"50",d:"50 dias com treino no total."},
-  {k:"vet100",n:"Veterano de guerra",r:"100",d:"100 dias com treino no total."},
-  {k:"vet200",n:"Lenda da granja",r:"200",d:"200 dias com treino no total."},
-  {k:"fds",n:"Fim de semana ativo",r:"sáb+dom",d:"Treinou sábado e domingo em 4 fins de semana."},
-  {k:"perfeito",n:"Dia perfeito",r:"5/5",d:"Os 5 exercícios feitos no mesmo dia, sem nenhuma falha."},
-  {k:"completo",n:"Completo",r:"todos",d:"Fez cada um dos 5 exercícios pelo menos uma vez."},
-  {k:"recorde",n:"Recorde quebrado",r:"recorde",d:"Bateu a sua melhor carga num exercício."},
-  {k:"recorde10",n:"Colecionador de recordes",r:"10",d:"10 recordes de carga somando todos os exercícios."},
-  {k:"maquina",n:"Frango máquina",r:"máquina",d:"Chegou à fase Máquina num exercício."},
-  {k:"maquinas",n:"Granja de máquinas",r:"5 máq.",d:"Chegou à fase Máquina nos 5 exercícios."},
-  {k:"h10",n:"Maratonista",r:"10h",d:"10 horas de escalada somadas."},
-  {k:"h50",n:"Ultramaratonista",r:"50h",d:"50 horas de escalada somadas."},
-  {k:"h100",n:"Morador da parede",r:"100h",d:"100 horas de escalada somadas."},
-  {k:"longa",n:"Sessão longa",r:"2h+",d:"Uma escalada de 2 horas ou mais."},
+  {k:"vet",n:"Veterano",niveis:[
+    {k:"vet50",r:"50",d:"50 dias com treino no total."},
+    {k:"vet100",r:"100",d:"100 dias com treino no total."},
+    {k:"vet200",r:"200",d:"200 dias com treino no total."}]},
+  {k:"fds",n:"Fim de semana ativo",niveis:[
+    {k:"fds",r:"4 fins",d:"Treinou sábado e domingo em 4 fins de semana."},
+    {k:"fds12",r:"12 fins",d:"Treinou sábado e domingo em 12 fins de semana."},
+    {k:"fds26",r:"26 fins",d:"Treinou sábado e domingo em 26 fins de semana."}]},
+  {k:"perfeito",n:"Dia perfeito",niveis:[
+    {k:"completo",r:"todos",d:"Fez cada um dos 5 exercícios pelo menos uma vez."},
+    {k:"perfeito",r:"5/5",d:"Os 5 exercícios feitos no mesmo dia, sem nenhuma falha."},
+    {k:"perfeito10",r:"10 dias",d:"10 dias perfeitos: os 5 exercícios no mesmo dia, sem falha."}]},
+  {k:"recorde",n:"Recordista",niveis:[
+    {k:"recorde",r:"1",d:"Bateu a sua melhor carga num exercício."},
+    {k:"recorde10",r:"10",d:"10 recordes de carga somando todos os exercícios."},
+    {k:"recorde25",r:"25",d:"25 recordes de carga somando todos os exercícios."}]},
+  {k:"maquina",n:"Frango máquina",niveis:[
+    {k:"maquina",r:"1 máq.",d:"Chegou à fase Máquina num exercício."},
+    {k:"maquina3",r:"3 máq.",d:"Chegou à fase Máquina em 3 exercícios."},
+    {k:"maquinas",r:"5 máq.",d:"Chegou à fase Máquina nos 5 exercícios."}]},
+  {k:"horas",n:"Maratonista",niveis:[
+    {k:"h10",r:"10h",d:"10 horas de escalada somadas."},
+    {k:"h50",r:"50h",d:"50 horas de escalada somadas."},
+    {k:"h100",r:"100h",d:"100 horas de escalada somadas."}]},
+  {k:"longa",n:"Sessão longa",niveis:[
+    {k:"longa",r:"2h+",d:"Uma escalada de 2 horas ou mais."},
+    {k:"ginasio",r:"3h+",d:"Uma escalada de 3 horas ou mais. Já pode pagar aluguel."},
+    {k:"ginasio10",r:"10 × 3h+",d:"10 escaladas de 3 horas ou mais."}]},
   {k:"intensa",n:"Apertei e me passei",r:"intensa",d:"Uma escalada de intensidade intensa."},
-  {k:"descanso4",n:"Descanso consciente",r:"4 sem.",d:"Treinou e descansou pelo menos 1 dia em cada semana, por 4 semanas seguidas."},
-  {k:"semdor",n:"Dedos de aço",r:"20",d:"20 dias de treino registrados sem dor."},
+  {k:"descanso",n:"Descanso consciente",niveis:[
+    {k:"descanso4",r:"4 sem.",d:"Treinou e descansou pelo menos 1 dia em cada semana, por 4 semanas seguidas."},
+    {k:"descanso12",r:"12 sem.",d:"Treinou e descansou pelo menos 1 dia em cada semana, por 12 semanas seguidas."},
+    {k:"descanso26",r:"26 sem.",d:"Treinou e descansou pelo menos 1 dia em cada semana, por 26 semanas seguidas."}]},
+  {k:"semdor",n:"Dedos de aço",niveis:[
+    {k:"semdor",r:"20",d:"20 dias de treino registrados sem dor."},
+    {k:"semdor50",r:"50",d:"50 dias de treino registrados sem dor."},
+    {k:"semdor100",r:"100",d:"100 dias de treino registrados sem dor."}]},
   {k:"superacao",n:"Superação",r:"virada",d:"Falhou num exercício e depois voltou e fez."},
-  {k:"volta",n:"De volta à ativa",r:"14 dias",d:"Voltou a treinar depois de 14 dias parado."},
   {k:"backup",n:"Precavido",r:"backup",d:"Fez o primeiro backup."},
-  {k:"balanca",n:"Na balança",r:"4 sem.",d:"Registrou o peso em 4 semanas seguidas."},
-  {k:"sofa",n:"Frango de sofá",r:"zzz",d:"3 dias seguidos de descanso. O sofá agradece.",s:1},
-  {k:"hiberna",n:"Hibernação",r:"urso",d:"10 dias sem treinar. O frango virou urso.",s:1},
-  {k:"ressuscitou",n:"Ressuscitou",r:"vivo!",d:"Voltou a treinar depois de hibernar.",s:1},
+  {k:"balanca",n:"Na balança",niveis:[
+    {k:"balanca",r:"4 sem.",d:"Registrou o peso em 4 semanas seguidas."},
+    {k:"balanca12",r:"12 sem.",d:"Registrou o peso em 12 semanas seguidas."},
+    {k:"balanca26",r:"26 sem.",d:"Registrou o peso em 26 semanas seguidas."}]},
+  {k:"sofa",n:"Frango de sofá",r:"zzz",d:"7 dias seguidos de descanso. O sofá agradece.",s:1},
+  {k:"hiberna",n:"Hibernação",r:"urso",d:"30 dias sem treinar. O frango virou urso.",s:1},
+  {k:"ressuscitou",n:"Ressuscitou",r:"vivo!",d:"Voltou a treinar depois de 14 dias parado.",s:1},
   {k:"soesc",n:"Só vim pela escalada",r:"parede",d:"5 dias só de escalada, sem fortalecimento.",s:1},
-  {k:"ginasio",n:"Morando no ginásio",r:"3h+",d:"Uma escalada de 3 horas ou mais. Já pode pagar aluguel.",s:1},
   {k:"passeio",n:"Passeio no parque",r:"leve",d:"Uma escalada leve de 30 minutos. Mais conversa que escalada.",s:1},
   {k:"dieta",n:"Frango de dieta",r:"dieta",d:"Registrou o peso 5 vezes.",s:1},
   {k:"curioso",n:"Frango curioso",r:"ⓘ",d:"Leu a explicação dos 5 exercícios.",s:1}
 ];
+const NIVEIS=["Bronze","Prata","Ouro"];
+/* cada chave guardada em D.conq aponta para a medalha e o nível (i = -1 se a medalha não tem níveis) */
+const CHAVE_CONQ={};
+CONQ.forEach(c=>{if(c.niveis)c.niveis.forEach((x,i)=>{CHAVE_CONQ[x.k]={c:c,i:i,x:x}});else CHAVE_CONQ[c.k]={c:c,i:-1,x:c}});
+/* maior nível já batido: -1 bloqueada, 0 bronze (ou conquistada, se não tem níveis), 1 prata, 2 ouro */
+function nivelConq(c){
+  const tem=k=>!!(D.conq&&D.conq[k]);
+  if(!c.niveis)return tem(c.k)?0:-1;
+  for(let i=c.niveis.length-1;i>=0;i--)if(tem(c.niveis[i].k))return i;
+  return -1;
+}
+/* só vale comemorar a chave que é o nível mais alto da medalha: quem pula de bronze para prata
+   no mesmo registro vê só a prata, e um nível novo abaixo de um já batido passa quieto */
+const conqNoTopo=k=>{const m=CHAVE_CONQ[k];return !!m&&!!(D.conq&&D.conq[k])&&(m.i<0||nivelConq(m.c)===m.i)};
 /* estado de cada conquista: {data} quando já batida e {p:[atual,meta]} para o progresso */
 function calcConquistas(){
   const R={},ok=(k,data)=>{if(!R[k])R[k]={};if(!R[k].data&&data)R[k].data=data},pr=(k,a,m)=>{if(!R[k])R[k]={};R[k].p=[Math.min(a,m),m]};
   const ds=datas(),ss=D.sessoes,h=hoje();
   /* linha do tempo dia a dia desde o primeiro registro: T treino, R descanso */
   const dias=[];if(ds.length)for(let d=ds[0];d<=h;d=somaDias(d,1))dias.push({d:d,t:treinou(ss[d]),r:descansou(d)});
-  let run=0,best=0,rr=0,ant=null,nt=0,noMes={},mesMax=0,fds=0,semDor=0,soEsc=0,min=0,rec=0,melhor={},falhou={},feitoEx={},perf=0;
+  let run=0,best=0,rr=0,ant=null,nt=0,noMes={},mesMax=0,fds=0,semDor=0,soEsc=0,min=0,rec=0,melhor={},falhou={},feitoEx={},perf=0,nPerf=0,n3h=0;
   dias.forEach((x,i)=>{
     const s=ss[x.d];
     if(x.t){
       run++;if(run>best)best=run;[7,15,30].forEach(n=>{if(run>=n)ok("seq"+n,x.d)});
-      if(rr>=10)ok("ressuscitou",x.d);if(ant&&diasEntre(ant,x.d)-1>=14)ok("volta",x.d);
+      if(ant&&diasEntre(ant,x.d)-1>=14)ok("ressuscitou",x.d);
       rr=0;ant=x.d;nt++;ok("primeiro",x.d);[50,100,200].forEach(n=>{if(nt>=n)ok("vet"+n,x.d)});
       const m=x.d.slice(0,7);noMes[m]=(noMes[m]||0)+1;mesMax=Math.max(mesMax,noMes[m]);if(noMes[m]>=12)ok("mes12",x.d);
-      if(dt(x.d).getDay()===0&&i>0&&dias[i-1].t){fds++;if(fds>=4)ok("fds",x.d)}
-      if(s.escalada!==undefined&&!s.dor){semDor++;if(semDor>=20)ok("semdor",x.d)}
+      if(dt(x.d).getDay()===0&&i>0&&dias[i-1].t){fds++;if(fds>=4)ok("fds",x.d);if(fds>=12)ok("fds12",x.d);if(fds>=26)ok("fds26",x.d)}
+      if(s.escalada!==undefined&&!s.dor){semDor++;if(semDor>=20)ok("semdor",x.d);if(semDor>=50)ok("semdor50",x.d);if(semDor>=100)ok("semdor100",x.d)}
       if(s.escalada&&!temSeries(s)){soEsc++;if(soEsc>=5)ok("soesc",x.d)}
-    }else{run=0;if(x.r){rr++;if(rr>=3)ok("sofa",x.d);if(rr>=10)ok("hiberna",x.d)}}
+    }else{run=0;if(x.r){rr++;if(rr>=7)ok("sofa",x.d);if(rr>=30)ok("hiberna",x.d)}}
     if(s&&s.escalada){min+=s.escalada.min;[10,50,100].forEach(n=>{if(min>=n*60)ok("h"+n,x.d)});
-      if(s.escalada.min>=120)ok("longa",x.d);if(s.escalada.min>=180)ok("ginasio",x.d);
+      if(s.escalada.min>=120)ok("longa",x.d);if(s.escalada.min>=180){ok("ginasio",x.d);n3h++;if(n3h>=10)ok("ginasio10",x.d)}
       if(s.escalada.int==="intensa")ok("intensa",x.d);if(s.escalada.int==="leve"&&s.escalada.min<=30)ok("passeio",x.d)}
     if(s&&temSeries(s)){let n=0;
       EX.forEach(e=>{const sl=slotsDe(e),fez=sl.every(q=>nota(s,q)!==null);
         if(fez){n++;feitoEx[e.k]=1;if(falhou[e.k])ok("superacao",x.d)}
         if(falhouEx(s,e))falhou[e.k]=1;
-        sl.forEach(q=>{const v=nota(s,q);if(v===null)return;if(melhor[q]!==undefined&&v>melhor[q]){rec++;ok("recorde",x.d);if(rec>=10)ok("recorde10",x.d)}if(melhor[q]===undefined||v>melhor[q])melhor[q]=v})});
-      perf=Math.max(perf,n);if(n===5)ok("perfeito",x.d);if(Object.keys(feitoEx).length===5)ok("completo",x.d)}
+        sl.forEach(q=>{const v=nota(s,q);if(v===null)return;if(melhor[q]!==undefined&&v>melhor[q]){rec++;ok("recorde",x.d);if(rec>=10)ok("recorde10",x.d);if(rec>=25)ok("recorde25",x.d)}if(melhor[q]===undefined||v>melhor[q])melhor[q]=v})});
+      perf=Math.max(perf,n);if(n===5){ok("perfeito",x.d);nPerf++;if(nPerf>=10)ok("perfeito10",x.d)}if(Object.keys(feitoEx).length===5)ok("completo",x.d)}
   });
   /* semanas (domingo a sábado) com treino e descanso, e semanas com peso */
   const semana=d=>somaDias(d,-dt(d).getDay());
   {let seg=0,top=0,sem=null,t=0,r=0,quando=null;
-    const fecha=()=>{if(sem===null)return;if(t&&r){seg++;top=Math.max(top,seg);if(seg>=4)ok("descanso4",quando)}else if(sem!==semana(h))seg=0};
+    const fecha=()=>{if(sem===null)return;if(t&&r){seg++;top=Math.max(top,seg);[4,12,26].forEach(n=>{if(seg>=n)ok("descanso"+n,quando)})}else if(sem!==semana(h))seg=0};
     dias.forEach(x=>{const w=semana(x.d);if(w!==sem){fecha();sem=w;t=0;r=0}if(x.t)t++;if(x.r)r++;if(t&&r&&!quando)quando=x.d;if(!(t&&r))quando=null});
-    fecha();pr("descanso4",top,4)}
-  {let seg=0,top=0,ult=null;D.pesos.forEach(p=>{const w=semana(p.data);if(w===ult)return;seg=ult&&somaDias(ult,7)===w?seg+1:1;ult=w;top=Math.max(top,seg);if(seg>=4)ok("balanca",p.data)});pr("balanca",top,4)}
+    fecha();[4,12,26].forEach(n=>pr("descanso"+n,top,n))}
+  {let seg=0,top=0,ult=null;D.pesos.forEach(p=>{const w=semana(p.data);if(w===ult)return;seg=ult&&somaDias(ult,7)===w?seg+1:1;ult=w;top=Math.max(top,seg);
+    if(seg>=4)ok("balanca",p.data);if(seg>=12)ok("balanca12",p.data);if(seg>=26)ok("balanca26",p.data)});
+    pr("balanca",top,4);pr("balanca12",top,12);pr("balanca26",top,26)}
   if(D.pesos.length>=5)ok("dieta",D.pesos[4].data);
   if(D.ultimoBackup)ok("backup",D.ultimoBackup);
   const vis=(D.vistos||[]).filter(k=>INFO[k]).length;if(vis>=5)ok("curioso",D.conq&&D.conq.curioso||h);
-  const fases=EX.map(e=>progressoFase(e).fmax||0),nMaq=fases.filter(f=>f===3).length;
-  if(nMaq)ok("maquina",D.conq&&D.conq.maquina||h);if(nMaq===5)ok("maquinas",D.conq&&D.conq.maquinas||h);
+  const fases=EX.map(e=>progressoFase(e).fmax||0),nMaq=fases.filter(f=>f===3).length,ja=k=>D.conq&&D.conq[k]||h;
+  if(nMaq)ok("maquina",ja("maquina"));if(nMaq>=3)ok("maquina3",ja("maquina3"));if(nMaq===5)ok("maquinas",ja("maquinas"));
   pr("seq7",best,7);pr("seq15",best,15);pr("seq30",best,30);pr("mes12",mesMax,12);
-  [50,100,200].forEach(n=>pr("vet"+n,nt,n));pr("fds",fds,4);pr("perfeito",perf,5);pr("completo",Object.keys(feitoEx).length,5);
-  pr("recorde10",rec,10);pr("maquina",Math.max.apply(null,fases),3);pr("maquinas",nMaq,5);
-  [10,50,100].forEach(n=>pr("h"+n,Math.floor(min/60),n));pr("semdor",semDor,20);
+  [50,100,200].forEach(n=>pr("vet"+n,nt,n));pr("fds",fds,4);pr("fds12",fds,12);pr("fds26",fds,26);
+  pr("completo",Object.keys(feitoEx).length,5);pr("perfeito",perf,5);pr("perfeito10",nPerf,10);
+  pr("recorde10",rec,10);pr("recorde25",rec,25);pr("maquina",Math.max.apply(null,fases),3);pr("maquina3",nMaq,3);pr("maquinas",nMaq,5);
+  [10,50,100].forEach(n=>pr("h"+n,Math.floor(min/60),n));pr("ginasio10",n3h,10);
+  pr("semdor",semDor,20);pr("semdor50",semDor,50);pr("semdor100",semDor,100);
   pr("soesc",soEsc,5);pr("dieta",D.pesos.length,5);pr("curioso",vis,5);
   return R;
 }
@@ -1586,13 +1638,17 @@ function calcConquistas(){
 function checarConquistas(segurar){
   const R=calcConquistas(),primeira=!D.conq;let mudou=primeira;
   if(primeira)D.conq={};
-  CONQ.forEach(c=>{const r=R[c.k],d=r&&r.data,tinha=D.conq[c.k];
-    if(!d){if(tinha){delete D.conq[c.k];mudou=true}return}
+  /* "De volta à ativa" virou "Ressuscitou": quem já tinha a antiga não comemora de novo */
+  if(D.conq.volta){if(!D.conq.ressuscitou)D.conq.ressuscitou=D.conq.volta;delete D.conq.volta;mudou=true}
+  const novas=[];
+  Object.keys(CHAVE_CONQ).forEach(k=>{const r=R[k],d=r&&r.data,tinha=D.conq[k];
+    if(!d){if(tinha){delete D.conq[k];mudou=true}return}
     if(tinha===d)return;
-    D.conq[c.k]=d;mudou=true;
-    if(!tinha&&!primeira&&!celebrados.has("conq:"+c.k)){celebrados.add("conq:"+c.k);
-      if(!segurar)U.fila.push({tipo:"conquista",id:c.k});
-      else if((D.conqPend=D.conqPend||[]).indexOf(c.k)<0)D.conqPend.push(c.k)}});
+    D.conq[k]=d;mudou=true;
+    if(!tinha&&!primeira&&!celebrados.has("conq:"+k))novas.push(k)});
+  novas.filter(conqNoTopo).forEach(k=>{celebrados.add("conq:"+k);
+    if(!segurar)U.fila.push({tipo:"conquista",id:k});
+    else if((D.conqPend=D.conqPend||[]).indexOf(k)<0)D.conqPend.push(k)});
   if(mudou)gravar();
   return R;
 }
@@ -1697,12 +1753,6 @@ function mSuperacao(){
   return '<path d="M-72 46 Q-64 -36 34 -66" stroke="#3BB273" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M48 -71 L24 -82 L30 -56z" fill="#3BB273"/>'+
     mFrango(C_OLHOS+M_BRAVO,cBraco("M-15 10 q-9 10 -9 20",-24,30)+joinha,curativo)+mFaisca(-48,-50,1.1,0)+mFaisca(52,10,1,.7);
 }
-function mVolta(){
-  const faixa='<path d="M-19 -60 q19 -8 38 0 l-1 6 q-18 -7 -36 0z" fill="#E84855" stroke="#2B2B2B" stroke-width="1.6" stroke-linejoin="round"/><path d="M-18 -57 l-12 -5 l2 8z M-18 -57 l-10 6 l6 4z" fill="#E84855" stroke="#2B2B2B" stroke-width="1.4" stroke-linejoin="round"/>';
-  return '<rect class="voa" x="-66" y="-36" width="12" height="14" rx="2" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.2"/><rect class="voa" style="animation-delay:1.1s" x="52" y="-50" width="12" height="14" rx="2" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.2"/>'+
-    '<circle class="po" cx="-22" cy="56" r="6" fill="#d9d4ca"/><circle class="po" style="animation-delay:.6s" cx="22" cy="56" r="6" fill="#d9d4ca"/>'+
-    '<g class="m-pula">'+mFrango(C_OLHOS+M_BRAVO,cBraco("M-15 10 q-12 6 -20 18",-35,28)+cBraco("M15 8 q16 -8 16 -30",31,-22),faixa)+'</g>';
-}
 function mBackup(){
   let chuva="";[[-62,-44,0],[-50,-10,.5],[64,-24,.9],[56,6,.2],[-68,14,1.1],[40,-2,.7]].forEach(p=>{chuva+='<path class="drip" style="animation-delay:'+p[2]+'s" d="M'+p[0]+' '+p[1]+' q-4 7 0 9 q4 -2 0 -9z" fill="#7EC8E3"/>'});
   return chuva+'<path d="M10 -84 L30 -6" stroke="#2B2B2B" stroke-width="3" stroke-linecap="round"/>'+
@@ -1741,28 +1791,30 @@ const ARTE_CONQ={
   mes12:["#463C6E",mMes12],
   vet50:["#4a5237",()=>mVeterano(0)],vet100:["#4a5237",()=>mVeterano(1)],vet200:["#4a5237",()=>mVeterano(2)],
   fds:["#3b6a8f",mFds],perfeito:["#35507a",mPerfeito],completo:["#5c4a2e",mCompleto],
-  recorde:["#2F5A4A",()=>'<g transform="translate(0 12)">'+mRecorde()+'</g>'],recorde10:["#5c2a33",mRecorde10],
-  maquina:["#2B3A4A",()=>mTira(P3)],maquinas:["#2B3A4A",mMaquinas],
+  fds12:["#3b6a8f",mFds],fds26:["#3b6a8f",mFds],perfeito10:["#35507a",mPerfeito],
+  recorde:["#2F5A4A",()=>'<g transform="translate(0 12)">'+mRecorde()+'</g>'],recorde10:["#5c2a33",mRecorde10],recorde25:["#5c2a33",mRecorde10],
+  maquina:["#2B3A4A",()=>mTira(P3)],maquina3:["#2B3A4A",mMaquinas],maquinas:["#2B3A4A",mMaquinas],
   h10:["#5d4b3b",()=>mParede(0)],h50:["#5d4b3b",()=>mParede(1)],h100:["#5d4b3b",()=>mParede(2)],
-  longa:["#2F5A4A",()=>CENA_TEMPO[1]],intensa:["#5c2a33",()=>'<g transform="translate(0 14)">'+mIntensa()+'</g>'],descanso4:["#35507a",()=>CENA_REDE],
-  semdor:["#2F5A4A",()=>CENA_ACO],superacao:["#2E4057",mSuperacao],volta:["#6E4230",mVolta],
-  backup:["#35507a",mBackup],balanca:["#2E4057",mBalanca],
+  longa:["#2F5A4A",()=>CENA_TEMPO[1]],intensa:["#5c2a33",()=>'<g transform="translate(0 14)">'+mIntensa()+'</g>'],descanso4:["#35507a",()=>CENA_REDE],descanso12:["#35507a",()=>CENA_REDE],descanso26:["#35507a",()=>CENA_REDE],
+  semdor:["#2F5A4A",()=>CENA_ACO],semdor50:["#2F5A4A",()=>CENA_ACO],semdor100:["#2F5A4A",()=>CENA_ACO],superacao:["#2E4057",mSuperacao],
+  backup:["#35507a",mBackup],balanca:["#2E4057",mBalanca],balanca12:["#2E4057",mBalanca],balanca26:["#2E4057",mBalanca],
   sofa:["#463C6E",()=>CENA_SOFA],hiberna:["#1d2a44",mUrso],ressuscitou:["#3a2f5a",mRessuscitou],
-  soesc:["#2E4057",()=>CENA_SO_PAREDE],ginasio:["#6E4230",()=>CENA_TEMPO[2]],passeio:["#3b6a8f",mPasseio],
+  soesc:["#2E4057",()=>CENA_SO_PAREDE],ginasio:["#6E4230",()=>CENA_TEMPO[2]],ginasio10:["#6E4230",()=>CENA_TEMPO[2]],passeio:["#3b6a8f",mPasseio],
   dieta:["#3a5a2f",mDieta],curioso:["#2E4057",mCurioso]
 };
-/* conquistas em série: aro bronze, prata e ouro, com 1 a 3 estrelas */
-const M_NIVEL={seq7:0,seq15:1,seq30:2,vet50:0,vet100:1,vet200:2,h10:0,h50:1,h100:2};
 const M_PONTOS=(()=>{let h="";for(let i=0;i<30;i++){const a=i/30*Math.PI*2;h+='<circle cx="'+(53*Math.cos(a)).toFixed(2)+'" cy="'+(53*Math.sin(a)).toFixed(2)+'" r="1.1" fill="#000" opacity=".22"/>'}return h})();
 /* conquista surpresa bloqueada: ovo pintadinho com um "?" no meio */
 const M_OVO='<g transform="translate(0 -5)"><path d="M0 -34 C16 -34 27 -8 27 10 C27 28 15 38 0 38 C-15 38 -27 28 -27 10 C-27 -8 -16 -34 0 -34z" fill="#3a3833" stroke="#4a4740" stroke-width="1.6"/>'+
   '<path d="M-17 -6 Q-15 -22 -6 -29" stroke="#fff" stroke-opacity=".12" stroke-width="3.5" fill="none" stroke-linecap="round"/>'+
   '<circle cx="14" cy="-14" r="2.6" fill="#2e2c28"/><circle cx="-18" cy="20" r="2.2" fill="#2e2c28"/><circle cx="17" cy="24" r="1.8" fill="#2e2c28"/><circle cx="-8" cy="-22" r="1.6" fill="#2e2c28"/>'+
   '<text y="22" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="44" fill="#1c1b19">?</text></g>';
-/* o: {g: grande, vivo: cena animada, fechada: desenha bloqueada mesmo se já tiver} */
+/* o: {g: grande, vivo: cena animada, fechada: desenha bloqueada mesmo se já tiver,
+   nivel: desenha nesse nível (-1 bloqueada) em vez do nível atual}
+   medalha com níveis: aro bronze, prata e ouro, com 1 a 3 estrelas; sem níveis: aro dourado */
 function medalha(c,o){
   o=o||{};
-  const ok=!o.fechada&&!!(D.conq&&D.conq[c.k]),seg=c.s&&!ok,nv=M_NIVEL[c.k],a=ARTE_CONQ[c.k]||ARTE_CONQ.primeiro;
+  const lv=o.fechada?-1:o.nivel!==undefined?o.nivel:nivelConq(c),ok=lv>=0,seg=c.s&&!ok,nv=c.niveis&&ok?lv:undefined;
+  const x=c.niveis?c.niveis[Math.max(lv,0)]:c,a=ARTE_CONQ[x.k]||ARTE_CONQ.primeiro;
   let s='<svg class="msc'+(o.vivo&&ok?"":" mini")+'" viewBox="-60 -60 120 120" aria-hidden="true">'+
     '<circle r="58" fill="'+(ok?"url(#md-"+(nv===undefined?"gema":["bronze","prata","ouro"][nv])+")":"#2c2b28")+'"/>'+(ok?M_PONTOS:"")+
     '<circle r="49.5" fill="#000" opacity=".4"/><circle r="48" fill="'+(ok?a[0]:"#141412")+'"/>';
@@ -1772,7 +1824,7 @@ function medalha(c,o){
     s+='<path d="M-40 -25 A47 47 0 0 1 -12 -45" stroke="#fff" stroke-opacity=".22" stroke-width="3" fill="none" stroke-linecap="round"/>';
     if(nv!==undefined){const xs=[[0],[-8,8],[-15,0,15]][nv];s+='<g'+(o.vivo?' class="brilho"':"")+'>'+xs.map(x=>mEstrela(x,-54+Math.abs(x)*.12,6)).join("")+'</g>'}
   }
-  return '<span class="med'+(ok?"":" off")+(o.g?" g":"")+'">'+s+'</svg><em>'+esc(seg?"???":c.r)+'</em>'+(ok?"":'<i class="cad">'+ICONES.cadeado+'</i>')+'</span>';
+  return '<span class="med'+(ok?"":" off")+(o.g?" g":"")+'">'+s+'</svg><em>'+esc(seg?"???":x.r)+'</em>'+(ok?"":'<i class="cad">'+ICONES.cadeado+'</i>')+'</span>';
 }
 /* celebração: cadeado treme e cai, a medalha gira e revela a cena, depois raios e confete */
 function animarConquista(){
@@ -1786,24 +1838,38 @@ function animarConquista(){
   setTimeout(()=>{if(!cel.isConnected)return;cel.classList.add("revela");cel.insertAdjacentHTML("afterbegin",confete());
     if(navigator.vibrate)try{navigator.vibrate([10,60,20])}catch(x){}},1850);
 }
+/* progresso até o próximo nível (ou até a conquista, se não tem níveis) */
+function proxConq(c,R){
+  const lv=nivelConq(c),x=c.niveis?c.niveis[lv+1]:(lv<0?c:null),r=x&&R[x.k];
+  return r&&r.p&&r.p[0]>0?r.p:null;
+}
 function secaoConquistas(){
-  const R=calcConquistas(),tem=c=>!!(D.conq&&D.conq[c.k]);
-  const lista=CONQ.filter(tem).sort((a,b)=>D.conq[a.k]<D.conq[b.k]?1:-1).concat(CONQ.filter(c=>!tem(c)));
-  const n=CONQ.filter(tem).length;
+  const R=calcConquistas(),lv=c=>nivelConq(c),quando=c=>{const x=c.niveis?c.niveis[lv(c)]:c;return D.conq[x.k]};
+  const lista=CONQ.filter(c=>lv(c)>=0).sort((a,b)=>quando(a)<quando(b)?1:-1).concat(CONQ.filter(c=>lv(c)<0));
+  const n=CONQ.filter(c=>lv(c)>=0).length;
   return '<h3 class="sec-t">Conquistas</h3><p class="sec-sub">'+n+' de '+CONQ.length+' desbloqueadas</p><div class="conq-grade">'+
-    lista.map(c=>{const r=R[c.k]||{},seg=c.s&&!tem(c),p=!tem(c)&&!seg&&r.p&&r.p[0]>0?r.p:null;
-      return '<button class="conq'+(tem(c)?"":" off")+'" data-a="conq" data-v="'+c.k+'" aria-label="'+esc(seg?"Conquista surpresa":c.n)+'">'+medalha(c)+
+    lista.map(c=>{const tem=lv(c)>=0,seg=c.s&&!tem,p=seg?null:proxConq(c,R);
+      return '<button class="conq'+(tem?"":" off")+'" data-a="conq" data-v="'+c.k+'" aria-label="'+esc(seg?"Conquista surpresa":c.n+(c.niveis&&tem?", "+NIVEIS[lv(c)]:""))+'">'+medalha(c)+
         '<span class="conq-n">'+esc(seg?"Surpresa":c.n)+'</span>'+(p?'<span class="conq-bar"><i style="width:'+Math.round(p[0]/p[1]*100)+'%"></i></span>':"")+'</button>'}).join("")+'</div>';
 }
+const dataConq=d=>dt(d).toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"});
+const barraConq=p=>'<p class="conq-st">Progresso: '+p[0]+' de '+p[1]+'</p><span class="conq-bar g"><i style="width:'+Math.round(p[0]/p[1]*100)+'%"></i></span>';
 function folhaConq(k){
   const c=CONQ.find(x=>x.k===k);if(!c)return "";
-  const tem=!!(D.conq&&D.conq[k]),seg=c.s&&!tem,r=calcConquistas()[k]||{};
-  const quando=tem?dt(D.conq[k]).toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"}):"";
-  const st=tem?'<p class="conq-st ok">Conquistada em '+esc(quando)+'</p>':
-    seg?'<p class="conq-st">É surpresa! Continue usando o app para descobrir.</p>':
-    r.p?'<p class="conq-st">Progresso: '+r.p[0]+' de '+r.p[1]+'</p><span class="conq-bar g"><i style="width:'+Math.round(r.p[0]/r.p[1]*100)+'%"></i></span>':'<p class="conq-st">Ainda bloqueada.</p>';
+  const lv=nivelConq(c),tem=lv>=0,seg=c.s&&!tem,R=calcConquistas();
+  let corpo;
+  if(c.niveis){
+    /* escadinha: os três níveis, com a data dos batidos e o progresso do próximo */
+    corpo='<ol class="niveis">'+c.niveis.map((x,i)=>{const d=D.conq&&D.conq[x.k],r=R[x.k]||{},prox=i===lv+1;
+      return '<li class="nv'+i+(d?" ok":"")+'"><b>'+NIVEIS[i]+'</b><span>'+esc(x.d)+'</span>'+
+        (d?'<em>Conquistada em '+esc(dataConq(d))+'</em>':prox&&r.p?'<em>Progresso: '+r.p[0]+' de '+r.p[1]+'</em><span class="conq-bar"><i style="width:'+Math.round(r.p[0]/r.p[1]*100)+'%"></i></span>':"")+'</li>'}).join("")+'</ol>';
+  }else{
+    const r=R[k]||{};
+    corpo=(seg?"":'<p class="sub">'+esc(c.d)+'</p>')+(tem?'<p class="conq-st ok">Conquistada em '+esc(dataConq(D.conq[k]))+'</p>':
+      seg?'<p class="conq-st">É surpresa! Continue usando o app para descobrir.</p>':r.p?barraConq(r.p):'<p class="conq-st">Ainda bloqueada.</p>');
+  }
   return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha conq-folha" role="dialog" aria-modal="true" aria-labelledby="f-t">'+medalha(c,{g:1,vivo:1})+
-    '<h2 id="f-t">'+esc(seg?"Conquista surpresa":c.n)+'</h2>'+(seg?"":'<p class="sub">'+esc(c.d)+'</p>')+st+
+    '<h2 id="f-t">'+esc(seg?"Conquista surpresa":c.n)+'</h2>'+corpo+
     '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
 }
 /* eventos de um dia, na mesma ordem das perguntas do registro */
@@ -1977,8 +2043,10 @@ function dadosCena(ev){
   else if(ev.tipo==="forca"){tit="Mais forte";txt=ev.texto;arte=ave(e,{fase:st.fase,flex:true,cur:st.cur});cls="festa";extra='<span class="flutua">+'+nf1.format(ev.ganho)+'%</span>'}
   else if(ev.tipo==="evoluiu"){tit="Evoluiu!";txt="Meta batida no "+e.nome+": "+D.cortes[e.k][ev.para-1]+"% do peso. Agora é "+FASES[ev.para]+".";arte=ave(e,{fase:ev.de,todas:true});extra=confete()}
   else if(ev.tipo==="regrediu"){const u=ultimoTreino(e);tit="Enferrujou";txt=(u?"Parado há "+diasEntre(u,hoje())+" dias no "+e.nome+", o frango":"O frango do "+e.nome)+" voltou para "+FASES[ev.para]+". Bata o corte de novo para ele subir.";arte=ave(e,{fase:ev.para,enf:true});cls="treme"}
-  else if(ev.tipo==="conquista"){const c=CONQ.find(x=>x.k===ev.id);tit="Conquista!";txt=c.n+": "+c.d;
-    arte='<div class="moeda-w"><div class="raios"></div><div class="moeda"><div class="face frente">'+medalha(c,{g:1,fechada:1})+'</div><div class="face verso">'+medalha(c,{g:1,vivo:1})+'</div></div></div>'}
+  else if(ev.tipo==="conquista"){const m=CHAVE_CONQ[ev.id],c=m.c,i=m.i;
+    /* subir de nível: a moeda começa no nível de antes e vira para o novo */
+    tit=i>0?"Subiu de nível!":"Conquista!";txt=c.n+(i>=0?" · "+NIVEIS[i]:"")+": "+m.x.d;
+    arte='<div class="moeda-w"><div class="raios"></div><div class="moeda"><div class="face frente">'+medalha(c,{g:1,nivel:i-1})+'</div><div class="face verso">'+medalha(c,{g:1,vivo:1,nivel:Math.max(i,0)})+'</div></div></div>'}
   else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit=["Dedinho sensível","Dedo reclamando","Dedo em greve"][Math.min(3,ev.nivel)-1];txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
