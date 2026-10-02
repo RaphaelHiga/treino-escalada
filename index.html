@@ -300,9 +300,9 @@ button.pill{cursor:pointer}
 .cel-conq h2,.cel-conq p{opacity:0;transform:translateY(10px);transition:opacity .35s,transform .45s cubic-bezier(.3,1.6,.5,1)}
 .cel-conq.revela h2,.cel-conq.revela p{opacity:1;transform:none}
 .hist-tit{display:flex;align-items:center;justify-content:space-between;gap:12px}
-/* falha: ovinho vermelho no canto do dia */
-.ag-dia.x::after{content:"";position:absolute;top:3px;right:4px;width:8px;height:10px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
-.legenda i.ovo-falha{width:9px;height:11px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--d3)}
+/* falha: ovinho vermelho rachado no canto do dia (a rachadura é um zigue-zague escuro de lado a lado) */
+.ag-dia.x::after{content:"";position:absolute;top:3px;right:4px;width:10px;height:12px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpolyline points='0,12.5 4,9 7.5,13 11,8.5 14.5,12.5 20,9' fill='none' stroke='%231b1a17' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat,var(--d3);box-shadow:0 0 0 1.5px var(--bg)}
+.legenda i.ovo-falha{width:10px;height:12px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpolyline points='0,12.5 4,9 7.5,13 11,8.5 14.5,12.5 20,9' fill='none' stroke='%231b1a17' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat,var(--d3);vertical-align:-2px}
 .ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
 .ag-dia.fut{opacity:.3}
 .dia-cenas{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin:6px 0 4px}
