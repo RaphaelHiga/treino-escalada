@@ -1259,18 +1259,18 @@ function pesoRef(){
   const ant=D.pesos.filter(x=>x.data<U.dia);
   return {p:ant.length?ant[ant.length-1]:D.pesos[0]||null,dia:false};
 }
-/* botão e linha de baixo do peso, conforme o número no campo:
-   Salvo (bate com o do dia), Atualizar (mudou), Manter (repete o último) ou Salvar (primeira pesagem).
-   Logo depois de salvar, tocar em Salvo desfaz (U.pesoDesfaz guarda como o dia estava) */
+/* botão do peso, conforme o número no campo: Salvo (bate com o do dia), Atualizar (mudou),
+   Manter (repete o último) ou Salvar (primeira pesagem). A linha de baixo
+   mostra o último registro. Logo depois de salvar, tocar em Salvo desfaz (U.pesoDesfaz guarda
+   como o dia estava) */
 const podeDesfazerPeso=()=>!!U.pesoDesfaz&&U.pesoDesfaz.dia===U.dia;
 function estadoPeso(){
-  const {p,dia}=pesoRef(),v=r1(num(pesoRascunho().v)||0),ig=!!p&&r1(p.kg)===v,dif=p?r1(v-p.kg):0;
-  const delta=(dif>0?"+":"−")+nf1.format(Math.abs(dif))+" kg";
-  if(dia)return ig?{rot:"Salvo",cls:"ok",sub:podeDesfazerPeso()?"Toque em Salvo para desfazer":"Registrado neste dia"}:{rot:"Atualizar",cls:"pronto",sub:delta+" do registrado neste dia"};
+  const {p,dia}=pesoRef(),v=r1(num(pesoRascunho().v)||0),ig=!!p&&r1(p.kg)===v;
   if(!p)return {rot:"Salvar",cls:v>0?"pronto":"",sub:"Base para calcular a força relativa"};
-  if(ig){const atras=U.dia===hoje()?diasEntre(p.data,hoje()):0;
-    return {rot:"Manter",cls:"",sub:"Último: "+nf1.format(p.kg)+" kg em "+dm(p.data)+(atras>7?", há "+atras+" dias":""),alerta:atras>7}}
-  return {rot:"Atualizar",cls:"pronto",sub:delta+" desde "+dm(p.data)};
+  const atras=Math.max(0,diasEntre(p.data,hoje()));
+  const ult="Último registro: "+nf1.format(p.kg)+" kg em "+dm(p.data)+" | "+(atras===0?"hoje":atras===1?"ontem":"há "+atras+" dias");
+  if(dia)return ig?{rot:"Salvo",cls:"ok",sub:podeDesfazerPeso()?"Toque em Salvo para desfazer":ult}:{rot:"Atualizar",cls:"pronto",sub:ult};
+  return {rot:ig?"Manter":"Atualizar",cls:ig?"":"pronto",sub:ult,alerta:U.dia===hoje()&&atras>7};
 }
 function botaoPeso(){
   const b=document.querySelector("[data-a=peso-salvar]"),sub=document.querySelector("[data-peso-sub]");if(!b)return;
