@@ -201,9 +201,9 @@ p{margin:0}
 /* ovo esperando: balança, pula e a rachadura aparece; os risquinhos dos lados marcam o tremor */
 .ovo-esp .ovo-casca,.ovo-esp .ovo-sombra{transform-box:fill-box;transform-origin:50% 100%}
 .ovo-esp .ovo-sombra{transform-origin:50% 50%}
-.ovo-esp .ovo-casca{animation:ovo-espera 3.4s ease-in-out .4s infinite}
-.ovo-esp .ovo-sombra{animation:ovo-sombra 3.4s ease-in-out .4s infinite}
-.ovo-esp .ovo-tremor{opacity:0;animation:ovo-tremor 3.4s ease-in-out .4s infinite}
+.ovo-esp .ovo-casca{animation:ovo-espera 3.4s ease-in-out var(--ovo-d,.4s) infinite}
+.ovo-esp .ovo-sombra{animation:ovo-sombra 3.4s ease-in-out var(--ovo-d,.4s) infinite}
+.ovo-esp .ovo-tremor{opacity:0;animation:ovo-tremor 3.4s ease-in-out var(--ovo-d,.4s) infinite}
 .ovo-esp .ovo-racha{stroke-dasharray:100;stroke-dashoffset:100;animation:ovo-racha .9s ease-out 1.2s forwards}
 @keyframes ovo-espera{0%,50%,100%{transform:none}55%{transform:rotate(-8deg)}61%{transform:rotate(8deg)}67%{transform:rotate(-6deg)}73%{transform:rotate(5deg)}79%{transform:rotate(0)}86%{transform:translateY(-14px)}93%{transform:translateY(0) scale(1.04,.96)}97%{transform:none}}
 @keyframes ovo-sombra{0%,79%,100%{transform:none}86%{transform:scale(.75);opacity:.2}93%{transform:scale(1.08)}}
@@ -359,7 +359,8 @@ button.pill{cursor:pointer}
 .aj-ex-lin{display:flex;align-items:center;gap:12px}
 .aj-ex li:last-child{border-bottom:0}
 .aj-ex .av{width:40px;height:40px}
-.aj-ex li.off .av{opacity:.4}
+.aj-ex li.surge .cortes{animation:surge .32s ease-out both}
+.aj-ex li.some .cortes{opacity:0;transition:opacity .18s ease-out}
 .aj-ex-tx{flex:1;min-width:0}
 .aj-ex-tx b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
 .aj-ex-tx small{display:block;font-size:12px;color:var(--ink3)}
@@ -1200,6 +1201,19 @@ function animarBloco(k,fazer,ancora){
   };
   requestAnimationFrame(passo);
 }
+/* liga ou desliga um exercício nos Ajustes no mesmo ritmo do abrir e recolher do Treino:
+   a chave desliza, os cortes somem (ao desligar) e a altura da linha vai deslizando até a nova */
+function alternarAtivo(k,bt){
+  if(alternarAtivo.t)return;
+  const at=exAtivos().map(e=>e.k),i=at.indexOf(k),e=EX.find(x=>x.k===k);
+  if(i>=0&&at.length===1){toast("Deixe pelo menos um exercício");return}
+  if(i>=0)at.splice(i,1);else at.push(k);
+  D.ativos=EX.map(x=>x.k).filter(x=>at.indexOf(x)>=0);gravar();
+  bt.setAttribute("aria-checked",String(i<0));
+  const li=bt.closest("li");if(li&&i>=0&&!RM)li.classList.add("some");
+  alternarAtivo.t=setTimeout(()=>{alternarAtivo.t=null;if(U.tela==="ajustes")animarBloco(k,render,"topo");else render()},RM?0:180);
+  toast((i>=0?"Desligado: ":"Acompanhando: ")+e.nome);
+}
 function marcar(slot,i){
   const antesTinha=treinou(D.sessoes[U.dia]);
   const s=sessao(D,U.dia,true);
@@ -1669,8 +1683,9 @@ function resumoSessoes(ds){
   return n+(n>1?" sessões":" sessão")+(nf?' · <span class="fal">'+nf+(nf>1?" falhas":" falha")+'</span>':"")+(nd?" · "+nd+(nd>1?" descansos":" descanso"):"");
 }
 /* Evolução sem nenhum registro: o ovo ainda não chocou. Balança, dá um pulinho e já tem uma rachadura */
-function ovoEspera(){
-  return '<svg class="msc ovo-esp" viewBox="66 8 248 248" aria-hidden="true"><circle cx="190" cy="132" r="118" fill="#2E4057"/>'+
+/* cor e atraso opcionais: nos Ajustes cada exercício desligado é um ovo da cor dele, balançando na sua vez */
+function ovoEspera(cor,atraso){
+  return '<svg class="msc ovo-esp" viewBox="66 8 248 248" aria-hidden="true"'+(atraso!==undefined?' style="--ovo-d:'+atraso+'s"':'')+'><circle cx="190" cy="132" r="118" fill="'+(cor||"#2E4057")+'"/>'+
     '<ellipse class="ovo-sombra" cx="190" cy="218" rx="46" ry="7" fill="#000" opacity=".35"/>'+
     '<path class="ovo-tremor" d="M104 120 q-10 14 0 28 M92 112 q-14 22 0 44 M276 120 q10 14 0 28 M288 112 q14 22 0 44" stroke="#FFC83D" stroke-width="4" fill="none" stroke-linecap="round"/>'+
     '<g transform="translate(190 218) scale(.82) translate(-190 -218)"><g class="ovo-casca">'+
@@ -2211,7 +2226,7 @@ function telaAjustes(){
   CATS.forEach(c=>{
     h+='<h3 class="aj-cat">'+c[1]+'</h3><ul class="aj-ex">';
     EX.filter(e=>e.cat===c[0]).forEach(e=>{const on=ativo(e),st=estadoAve(e);
-      h+='<li'+(on?"":' class="off"')+'><div class="aj-ex-lin"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,mini:true})+'</div><div class="aj-ex-tx"><b>'+e.nome+'</b><small>'+e.proto+'</small></div>'+
+      h+='<li data-ex="'+e.k+'"'+(on?"":' class="off"')+'><div class="aj-ex-lin"><div class="av">'+(on?ave(e,{fase:st.fase,enf:st.enf,mini:true}):ovoEspera(e.cor,r1(.4+EX.indexOf(e)*.53%3.4)))+'</div><div class="aj-ex-tx"><b>'+e.nome+'</b><small>'+e.proto+'</small></div>'+
         '<button class="info-bt" data-a="info" data-v="'+e.k+'" aria-label="Como fazer: '+e.nome+'">'+ICONES.info+'</button>'+
         '<button class="chave" data-a="ativo" data-v="'+e.k+'" role="switch" aria-checked="'+on+'" aria-label="Acompanhar '+e.nome+'"></button></div>'+
         (on?'<div class="cortes"><small>Cortes em % do peso, '+(e.lev?"só a carga":"peso + carga")+'</small><div class="cortes-g">'+[0,1,2].map(i=>'<div><label for="corte-'+e.k+i+'">'+FASES[i+1]+'</label><div class="campo">'+
@@ -2556,10 +2571,7 @@ document.addEventListener("click",ev=>{
     case "apagar":U.folha="apagar";U.abre=true;render();break;
     case "apagar-ok":apagarTudo();break;
     case "tutorial":D.tutorial={};gravar();U.tela="treino";U.dia=hoje();U.card=null;U.modo=null;U.folha=null;render();break;
-    case "ativo":{const at=exAtivos().map(e=>e.k),i=at.indexOf(v);
-      if(i>=0){if(at.length===1){toast("Deixe pelo menos um exercício");break}at.splice(i,1)}else at.push(v);
-      D.ativos=EX.map(e=>e.k).filter(k=>at.indexOf(k)>=0);gravar();render();
-      {const e=EX.find(x=>x.k===v);toast((i>=0?"Desligado: ":"Acompanhando: ")+e.nome)}break}
+    case "ativo":alternarAtivo(v,b);break;
     case "cortes-padrao":D.cortes=JSON.parse(JSON.stringify(CORTES));verificarFases();gravar();toast("Cortes restaurados");render();break;
   }
 });
