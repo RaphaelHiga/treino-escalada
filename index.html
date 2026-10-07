@@ -1270,7 +1270,7 @@ function estadoPeso(){
   const atras=Math.max(0,diasEntre(p.data,hoje()));
   const ult="Último registro: "+nf1.format(p.kg)+" kg | "+(atras===0?"hoje":atras===1?"ontem":"há "+atras+" dias");
   if(dia)return ig?{rot:"Salvo",cls:"ok",sub:podeDesfazerPeso()?"Toque em Salvo para desfazer":ult}:{rot:"Atualizar",cls:"pronto",sub:ult};
-  return {rot:ig?"Manter":"Atualizar",cls:ig?"":"pronto",sub:ult,alerta:U.dia===hoje()&&atras>7};
+  return {rot:ig?"Manter":"Atualizar",cls:ig?"":"pronto",sub:ult,alerta:U.dia===hoje()&&atras>=60};
 }
 function botaoPeso(){
   const b=document.querySelector("[data-a=peso-salvar]"),sub=document.querySelector("[data-peso-sub]");if(!b)return;
