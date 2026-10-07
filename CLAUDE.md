@@ -22,8 +22,19 @@ App de treino de escalada em português (pt-BR), feito como PWA de um arquivo s�
 ## Padrões de interface
 
 - Abrir, recolher, ligar e desligar blocos usa `animarBloco(k, render, ancora)`: a altura desliza, sem pulo. Respeite `RM` (reduzir movimento).
+- Excluir é um toque só, com Desfazer no aviso: `toast(texto, desfazer)` (ver `excluirComDesfazer`).
+- Chama da sequência: use `chama(n)` (nunca `CHAMA` direto). Ela cresce em 7, 30 e 100 dias (`nivelChama`); tamanho e brilho ficam no CSS `.ch1` a `.ch3`.
+- Som: `cocorico()` é sintetizado com Web Audio (sem arquivo) e toca em `animarEvolucao`. `D.som === false` desliga; sem escolha salva, fica ligado.
 - Textos curtos e diretos, sem travessão, no tom do frango.
 - Teste no Chromium com Playwright (já instalado globalmente) antes de enviar.
+
+## Desempenho
+
+Com meses de registros, as contas de fase e de conquistas rodam milhares de vezes por toque. Três atalhos seguram isso:
+
+- `datas()` devolve a lista guardada e **congelada**: para `reverse()` ou `sort()`, copie antes com `.slice()`.
+- `diasEntre` usa o número de cada dia guardado (`diaN`), sem criar datas.
+- Durante o `render()`, `progressoFase`, `dorRecente` e `calcConquistas` ficam guardados em `MEMO` (só enquanto o render roda). Por isso o render nunca mexe em `D.sessoes`, `D.pesos` nem `D.cortes`; mudanças de dados acontecem antes, nas ações.
 
 ## Pendências
 
