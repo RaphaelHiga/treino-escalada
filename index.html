@@ -351,18 +351,12 @@ button.pill{cursor:pointer}
 .aj{padding:16px 0;border-top:1px solid var(--line)}
 .aj h2{font-size:28px;margin-bottom:6px}
 .aj p{font-size:14px;color:var(--ink2)}
-.cortes{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
-.cortes th{font-weight:500;color:var(--ink3);text-align:center;padding:4px 2px;font-size:12px}
-.cortes th:first-child{text-align:left}
-.cortes td{padding:4px 2px}
-.cortes td:first-child{color:var(--ink2)}
-.cortes input{width:100%;height:40px;border-radius:12px;border:0;background:var(--s1);text-align:center;font-size:16px;font-variant-numeric:tabular-nums}
 .linha-bt{display:flex;gap:10px;margin-top:12px}
-.cortes .cat-tr td{padding:12px 2px 2px;font:700 11px "Archivo",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 /* exercícios acompanhados: liga e desliga por categoria */
 .aj-cat{font:700 12px "Archivo",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:18px 0 2px}
 .aj-ex{list-style:none;margin:0;padding:0}
-.aj-ex li{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.aj-ex li{padding:8px 0;border-bottom:1px solid var(--line)}
+.aj-ex-lin{display:flex;align-items:center;gap:12px}
 .aj-ex li:last-child{border-bottom:0}
 .aj-ex .av{width:40px;height:40px}
 .aj-ex li.off .av{opacity:.4}
@@ -370,6 +364,14 @@ button.pill{cursor:pointer}
 .aj-ex-tx b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
 .aj-ex-tx small{display:block;font-size:12px;color:var(--ink3)}
 .aj-ex li.off .aj-ex-tx b{color:var(--ink2)}
+/* cortes das fases logo abaixo do exercício ligado, alinhados com o nome */
+.cortes{margin:8px 0 4px 52px}
+.cortes>small{display:block;font-size:12px;color:var(--ink3);margin-bottom:6px}
+.cortes-g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cortes label{display:block;font-size:11px;color:var(--ink3);text-align:center}
+.cortes .campo{position:relative;margin-top:3px}
+.cortes input{width:100%;height:40px;border-radius:12px;border:0;background:var(--s1);text-align:center;font-size:16px;font-variant-numeric:tabular-nums;padding:0 14px 0 4px}
+.cortes .campo i{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--ink3);pointer-events:none}
 .chave{width:50px;height:30px;flex:none;border-radius:15px;background:var(--s2);position:relative;transition:background .2s}
 .chave::after{content:"";position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:var(--ink3);transition:transform .2s,background .2s}
 .chave[aria-checked=true]{background:var(--gema)}
@@ -2204,22 +2206,19 @@ function folhaDia(d){
 function telaAjustes(){
   const p=pesoAtual();
   let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><button class="voltar" data-a="tela" data-v="treino">‹ Treino</button><h1>Ajustes</h1></div></header>';
-  h+='<section class="aj" id="aj-ex"><h2>Exercícios</h2><p>Escolha os que você acompanha: só eles aparecem no Treino e na Evolução. Desligar não apaga nada; ao religar, o histórico volta.</p>';
+  h+='<section class="aj" id="aj-ex"><h2>Exercícios</h2><p>Escolha os que você acompanha: só eles aparecem no Treino e na Evolução. Desligar não apaga nada; ao religar, o histórico volta.</p>'+
+    '<p style="margin-top:6px">Embaixo de cada exercício ligado ficam os cortes das fases: quando o frango muda de fase, em % do peso corporal.</p>';
   CATS.forEach(c=>{
     h+='<h3 class="aj-cat">'+c[1]+'</h3><ul class="aj-ex">';
     EX.filter(e=>e.cat===c[0]).forEach(e=>{const on=ativo(e),st=estadoAve(e);
-      h+='<li'+(on?"":' class="off"')+'><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,mini:true})+'</div><div class="aj-ex-tx"><b>'+e.nome+'</b><small>'+e.proto+'</small></div>'+
+      h+='<li'+(on?"":' class="off"')+'><div class="aj-ex-lin"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,mini:true})+'</div><div class="aj-ex-tx"><b>'+e.nome+'</b><small>'+e.proto+'</small></div>'+
         '<button class="info-bt" data-a="info" data-v="'+e.k+'" aria-label="Como fazer: '+e.nome+'">'+ICONES.info+'</button>'+
-        '<button class="chave" data-a="ativo" data-v="'+e.k+'" role="switch" aria-checked="'+on+'" aria-label="Acompanhar '+e.nome+'"></button></li>'});
+        '<button class="chave" data-a="ativo" data-v="'+e.k+'" role="switch" aria-checked="'+on+'" aria-label="Acompanhar '+e.nome+'"></button></div>'+
+        (on?'<div class="cortes"><small>Cortes em % do peso, '+(e.lev?"só a carga":"peso + carga")+'</small><div class="cortes-g">'+[0,1,2].map(i=>'<div><label for="corte-'+e.k+i+'">'+FASES[i+1]+'</label><div class="campo">'+
+          '<input id="corte-'+e.k+i+'" data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+', em % do peso"><i>%</i></div></div>').join("")+'</div></div>':"")+'</li>'});
     h+='</ul>';
   });
-  h+='</section>';
-  h+='<section class="aj"><h2>Cortes das fases</h2><p>Em % do peso corporal. Nos exercícios com o corpo (pendurado ou apoiado) conta peso + carga; nos de levantar peso, só a carga.</p>'+
-    '<table class="cortes"><thead><tr><th>Exercício</th><th>Frango</th><th>Frangão</th><th>Máquina</th></tr></thead><tbody>';
-  CATS.forEach(c=>{const es=exAtivos().filter(e=>e.cat===c[0]);if(!es.length)return;
-    h+='<tr class="cat-tr"><td colspan="4">'+c[1]+'</td></tr>';
-    es.forEach(e=>{h+='<tr><td>'+e.nome+'</td>'+[0,1,2].map(i=>'<td><input data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+'"></td>').join("")+'</tr>'})});
-  h+='</tbody></table><div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos valores sugeridos</button></div></section>';
+  h+='<div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos cortes sugeridos</button></div></section>';
   h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><p style="margin-top:6px;color:var(--ink3)">'+(D.ultimoBackup?"Último backup: "+dm(D.ultimoBackup)+"/"+D.ultimoBackup.slice(0,4):"Nenhum backup ainda")+'</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
   h+='<section class="aj" id="aj-tutorial"><h2>Tutorial</h2><p>Esqueceu onde fica alguma coisa? O frango mostra tudo de novo, com dados de exemplo.</p><button class="btn sec tour-rever" data-a="tutorial">Ver tutorial de novo</button></section>';
   h+='<section class="aj" id="aj-apagar"><h2>Apagar dados</h2><p>Apaga treinos, pesagens, conquistas e ajustes deste celular e deixa o app como novo.</p><button class="btn perigo" data-a="apagar">Apagar todos os dados</button></section>';
@@ -2570,9 +2569,10 @@ document.addEventListener("change",ev=>{
   if(t.dataset.a==="carga"){const v=num(t.value),e=exDe(t.dataset.s);if(v===null){t.value=nf1.format(cargaAtual(t.dataset.s));return}D.carga[t.dataset.s]=e.lev?Math.max(0,r1(v)):r1(v);t.value=nf1.format(D.carga[t.dataset.s]);gravar()}
   else if(t.dataset.a==="corte"){
     const v=num(t.value),k=t.dataset.k,i=+t.dataset.i;
-    if(v===null||v<=0)return render();
+    /* valor recusado: o campo volta ao corte guardado (o render não troca o bloco se nada mudou) */
+    if(v===null||v<=0){t.value=D.cortes[k][i];return}
     const c=D.cortes[k].slice();c[i]=v;
-    if(!(c[0]<c[1]&&c[1]<c[2])){toast("Os cortes precisam ser crescentes");return render()}
+    if(!(c[0]<c[1]&&c[1]<c[2])){t.value=D.cortes[k][i];toast("Os cortes precisam ser crescentes");return}
     D.cortes[k]=c;verificarFases();gravar();toast("Corte salvo");render();
   }
 });
@@ -2617,7 +2617,7 @@ const ROTEIROS={
     {folha:"sessao",u:{dorSim:false,dorP:{}},alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
     {folha:"sessao",u:{dorSim:true,dorP:{},mao:"esquerda"},demo:"dor",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
     {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},demo:"escalada",alvo:()=>blocoFolha("Escalou"),t:"Escalada",x:"Escalou? Toque em Sim e marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
-    {alvo:"#app .eng",t:"Ajustes",x:"Os exercícios que você acompanha, cortes das fases, backup dos seus dados e o botão para ver este tutorial de novo."},
+    {alvo:"#app .eng",t:"Ajustes",x:"Os exercícios que você acompanha e os cortes das fases de cada um, backup dos seus dados e o botão para ver este tutorial de novo."},
     {so:true,ok:"Bora treinar!",t:"Pronto, frango!"}
   ],
   evolucao:[
@@ -2640,7 +2640,7 @@ const ROTEIROS={
   ],
   ajustes:[
     {alvo:"#aj-ex",t:"Seus exercícios",x:"Superior, inferior, core e específico. Ligue os que você treina e desligue os que não quer acompanhar. O ⓘ explica cada um."},
-    {alvo:"#app .cortes",t:"A régua das fases",x:"Os cortes definem quando o frango muda de fase, em % do peso. Achou fácil ou difícil demais? Ajuste aqui."},
+    {alvo:"#app .cortes",t:"A régua das fases",x:"Embaixo de cada exercício ligado ficam os cortes: quando o frango muda de fase, em % do peso. Achou fácil ou difícil demais? Ajuste aqui."},
     {alvo:()=>{const b=$("#app [data-a=exportar]");return b&&b.parentElement},t:"Frango prevenido vale por dois",x:"Seus treinos ficam só neste celular. Exporte de vez em quando e guarde no Drive, no e-mail ou onde preferir. Trocou de celular? É só importar."},
     {alvo:"#aj-tutorial",t:"Quer rever?",x:"Este botão mostra o tutorial de novo quando você quiser."}
   ]
