@@ -78,9 +78,9 @@ p{margin:0}
 .info-lista{list-style:none;margin:4px 0 0;padding:0}
 .info-lista li{padding:10px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink2)}
 .info-lista b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
-.forta-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.forta-top{display:contents}
 .forta-top b{margin:0}
-.esf-selo{flex:none;padding:3px 10px;border-radius:999px;background:var(--s2);font-size:12px;color:var(--ink3)}
+.esf-selo{justify-self:start;margin-left:-10px;padding:3px 10px;border-radius:999px;background:var(--s2);font-size:12px;color:var(--ink3)}
 .esf-selo span{font-weight:700;color:var(--gema)}
 .fx-grade{display:grid;grid-template-columns:max-content 1fr;align-items:center;column-gap:18px;row-gap:10px;padding:4px 0 2px}
 .fx{display:contents}
@@ -2112,7 +2112,7 @@ function folhaDia(d){
       const rs=slotsDe(e).map(sl=>res(e,sl));
       return '<div class="fx"><span class="fx-nm">'+esc(e.nome)+'</span><span class="fx-rs">'+
         (e.maos?linha(rs[0],"Esq")+linha(rs[1],"Dir"):linha(rs[0]))+'</span></div>'});
-    if(ex.length)forta='<li class="forta"><div class="forta-top"><b>Fortalecimento</b>'+(temEsf(s)?'<span class="esf-selo">Intensidade <span>'+s.esforco+'</span>/10</span>':"")+'</div><div class="fx-grade">'+ex.join("")+'</div></li>';
+    if(ex.length)forta='<li class="forta"><div class="fx-grade"><div class="forta-top"><b>Fortalecimento</b>'+(temEsf(s)?'<span class="esf-selo">Intensidade <span>'+s.esforco+'</span>/10</span>':"<span></span>")+'</div>'+ex.join("")+'</div></li>';
     if(s.dor&&Object.keys(s.dor).length)li.push(["Dor",dorTexto(s.dor)]);
     else if(s.esforco!=null||s.escalada!=null)li.push(["Dor","Sem dor"]);
     if(s.escalada)li.push(["Escalada",fmtMin(s.escalada.min)+(s.escalada.min>=180?" ou mais":"")+", "+(ESC_INT.find(x=>x[0]===s.escalada.int)||ESC_INT[0])[1].toLowerCase()]);
