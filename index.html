@@ -131,6 +131,7 @@ p{margin:0}
 .app.retro .ex.completa::after{background-image:linear-gradient(100deg,transparent 30%,rgba(126,200,227,.4) 50%,transparent 70%)}
 .proto.alerta{color:var(--d2)}
 .set.ok{background:var(--gema);color:var(--gema-ink)}
+.set.pronto{color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--gema)}
 .set.falha{background:transparent;box-shadow:inset 0 0 0 2px var(--d3);color:var(--d3)}
 .set.falha::after{content:"";position:absolute;left:10px;right:10px;top:50%;height:2px;background:var(--d3);transform:rotate(-18deg)}
 .set.pop{animation:pop .35s cubic-bezier(.3,1.8,.5,1)}
@@ -1252,10 +1253,27 @@ function mostrarValor(inp,v,delta){
   if(!inp)return;inp.value=nf1.format(v);if(RM)return;
   inp.classList.remove("sobe","desce");void inp.offsetWidth;inp.classList.add(delta>0?"sobe":"desce");
 }
-/* botão ao lado do peso: Salvar, Atualizar ou Salvo (quando o número bate com o registrado) */
+/* peso de referência do dia: o registrado nele ou, sem registro, a última pesagem antes dele */
+function pesoRef(){
+  const pd=D.pesos.find(x=>x.data===U.dia);if(pd)return {p:pd,dia:true};
+  const ant=D.pesos.filter(x=>x.data<U.dia);
+  return {p:ant.length?ant[ant.length-1]:D.pesos[0]||null,dia:false};
+}
+/* botão e linha de baixo do peso, conforme o número no campo:
+   Salvo (bate com o do dia), Atualizar (mudou), Manter (repete o último) ou Salvar (primeira pesagem) */
+function estadoPeso(){
+  const {p,dia}=pesoRef(),v=r1(num(pesoRascunho().v)||0),ig=!!p&&r1(p.kg)===v,dif=p?r1(v-p.kg):0;
+  const delta=(dif>0?"+":"−")+nf1.format(Math.abs(dif))+" kg";
+  if(dia)return ig?{rot:"Salvo",cls:"ok",sub:"Registrado neste dia"}:{rot:"Atualizar",cls:"pronto",sub:delta+" do registrado neste dia"};
+  if(!p)return {rot:"Salvar",cls:v>0?"pronto":"",sub:"Base para calcular a força relativa"};
+  if(ig){const atras=U.dia===hoje()?diasEntre(p.data,hoje()):0;
+    return {rot:"Manter",cls:"",sub:"Último: "+nf1.format(p.kg)+" kg em "+dm(p.data)+(atras>7?", há "+atras+" dias":""),alerta:atras>7}}
+  return {rot:"Atualizar",cls:"pronto",sub:delta+" desde "+dm(p.data)};
+}
 function botaoPeso(){
-  const b=document.querySelector("[data-a=peso-salvar]"),pd=D.pesos.find(x=>x.data===U.dia);if(!b)return;
-  const ig=pd&&r1(pd.kg)===r1(num(pesoRascunho().v)||0);b.classList.toggle("ok",!!ig);b.textContent=ig?"Salvo":pd?"Atualizar":"Salvar";
+  const b=document.querySelector("[data-a=peso-salvar]"),sub=document.querySelector("[data-peso-sub]");if(!b)return;
+  const e=estadoPeso();b.classList.toggle("ok",e.cls==="ok");b.classList.toggle("pronto",e.cls==="pronto");b.textContent=e.rot;
+  if(sub){sub.textContent=e.sub;sub.classList.toggle("alerta",!!e.alerta)}
 }
 function abrirSessao(){
   const s=D.sessoes[U.dia]||{};
@@ -1311,10 +1329,10 @@ function pesoRascunho(){
 function salvarPeso(){
   const v=num(pesoRascunho().v);
   if(!v||v<30||v>250){toast("Informe um peso entre 30 e 250 kg");return render()}
-  const d=U.dia,antes=D.pesos.find(p=>p.data===d);
+  const d=U.dia,{p:ref,dia:antes}=pesoRef(),rot=ref?(r1(ref.kg)===r1(v)?(antes?"Peso salvo":"Peso mantido: "+nf1.format(r1(v))+" kg"):"Peso atualizado"):"Peso salvo";
   D.pesos=D.pesos.filter(p=>p.data!==d);D.pesos.push({data:d,kg:r1(v)});D.pesos.sort((a,b)=>a.data<b.data?-1:1);
   U.fila=U.fila.concat(verificarFases(true));U.pop="peso";
-  gravar();toast(antes?"Peso atualizado":"Peso salvo");render();
+  gravar();toast(rot);render();
 }
 function exportar(){
   const nome="diario-escalada-"+hoje()+".json";
@@ -1553,13 +1571,11 @@ function telaTreino(){
   const modo=ehHoje?null:U.modo;   /* "peso" ou "sessao" quando veio de um + da Evolução */
   if(!ehHoje)h+='<div class="retro-faixa"><span><b>'+(modo==="peso"?"Peso de dia passado":modo==="sessao"?"Sessão de dia passado":"Registro de dia passado")+'</b>Tudo aqui vai para '+esc(dataTxt)+', não para hoje.</span></div>';
   if(datas().length<4&&modo!=="peso")h+='<p class="dica">Ajuste a carga e toque no botão: 1 toque marca como feito, 2 toques como falha, 3 toques limpa.</p>';
-  if(modo!=="sessao"){const pr=pesoRascunho(),pd=D.pesos.find(x=>x.data===U.dia),igual=pd&&r1(pd.kg)===r1(num(pr.v)||0);
-    const atras=p?diasEntre(p.data,hoje()):null;
-    const sub=pd?"Registrado neste dia":p?"Último: "+nf1.format(p.kg)+" kg em "+dm(p.data)+(ehHoje&&atras>7?", há "+atras+" dias":""):"Base para calcular a força relativa";
-    h+='<section class="ex"><div class="ex-top"><div class="av">'+BALANCA+'</div><div><h2>Peso corporal</h2><p class="proto'+(ehHoje&&(!p||atras>7)&&!pd?" alerta":"")+'">'+sub+'</p></div>'+
+  if(modo!=="sessao"){const pr=pesoRascunho(),ep=estadoPeso();
+    h+='<section class="ex"><div class="ex-top"><div class="av">'+BALANCA+'</div><div><h2>Peso corporal</h2><p class="proto'+(ep.alerta||ehHoje&&!p?" alerta":"")+'" data-peso-sub>'+esc(ep.sub)+'</p></div>'+
       (p?'<span class="rel">'+nf1.format(p.kg)+'<small>kg atual</small></span>':"")+'</div>'+
       '<div class="linha"><div class="stp"><button data-a="peso-menos" aria-label="Menos 100 g">−</button><input data-a="peso-val" inputmode="decimal" value="'+nf1.format(num(pr.v)||0)+'" aria-label="Peso em kg"><span>kg</span><button data-a="peso-mais" aria-label="Mais 100 g">+</button></div>'+
-      '<div class="sets"><button class="set largo'+(igual?" ok":"")+(U.pop==="peso"?" pop":"")+'" data-a="peso-salvar">'+(igual?"Salvo":pd?"Atualizar":"Salvar")+'</button></div></div></section>';}
+      '<div class="sets"><button class="set largo'+(ep.cls?" "+ep.cls:"")+(U.pop==="peso"?" pop":"")+'" data-a="peso-salvar">'+ep.rot+'</button></div></div></section>';}
   if(modo==="peso"){h+='<div class="fechar"><button class="btn sec" data-a="tela" data-v="evolucao">Voltar para a Evolução</button></div>';U.pop=null;return h}
   exOrdem().forEach(e=>{
     const st=estadoAve(e),mr=melhorRel(e,somaDias(hoje(),-JANELA)).rel;
@@ -2621,7 +2637,7 @@ const blocoFolha=t=>[...document.querySelectorAll(".folha .bloco")].find(b=>{con
 const ROTEIROS={
   treino:[
     {ovo:true,ok:"Bora!",t:"Cocoricó! Bem-vindo à granja",x:"Bora dar uma voltinha pela granja?\n\nVou te mostrar como registrar seus treinos e como o app funciona."},
-    {alvo:"#app section.ex:not([data-ex])",demo:"peso",t:"Sobe na balança",x:"Tudo é medido em % do seu peso. Ajuste no − e + e toque em Salvar. Uma pesagem por semana já basta."},
+    {alvo:"#app section.ex:not([data-ex])",demo:"peso",t:"Sobe na balança",x:"Tudo é medido em % do seu peso. Ajuste no − e + e toque em Atualizar. Uma pesagem por semana já basta."},
     {t:"Hora do treino",rola:true,varios:[
       {alvo:"#app [data-ex=maxhang] .ex-top",r:"Exercício",x:"Cada exercício tem um frango que cresce com a sua força. O ⓘ ensina a fazer."},
       {alvo:"#app [data-ex=maxhang] .linha",r:"Carga e séries",demo:"carga",ms:7600,x:"O − e o + mudam a carga. Fez as 3 séries? 1 toque marca Feito, 2 marcam Falha e 3 limpam."},
@@ -2845,7 +2861,7 @@ function tourFaiscas(el,n,cores,dist){
   faiscas(el,n,cores,dist);
   document.querySelectorAll(".faisca").forEach(f=>{if(!antes.has(f))f.style.zIndex=58});
 }
-/* animação do peso: um dedo toca no + três vezes e depois em Salvar. Só mexe na tela; nada é gravado */
+/* animação do peso: um dedo toca no + três vezes e depois em Atualizar. Só mexe na tela; nada é gravado */
 /* animações de exemplo: um dedo toca nos botões. Só mexem na tela (nada é gravado) e
    são desfeitas ao trocar de passo ou de item. Cada linha é [espera em ms, ação]. */
 function tourAnima(linha,repete){
@@ -2864,19 +2880,19 @@ function dedoEntra(b,dx,dy){const d=$(".tour-dedo");d.classList.add("sem-mov");d
 function dedoToca(b){const d=$(".tour-dedo");[d,b].filter(Boolean).forEach(x=>{const c=x===d?"toca":"tour-aperta";x.classList.remove(c);void x.offsetWidth;x.classList.add(c)})}
 const dedoSai=()=>$(".tour-dedo").classList.remove("on");
 const DEMOS={
-  /* peso: + três vezes e Salvar */
+  /* peso: + três vezes e Atualizar */
   peso(){
     const mais=$("#app [data-a=peso-mais]"),inp=$("#app input[data-a=peso-val]"),sal=$("#app [data-a=peso-salvar]");
     if(!mais||!inp||!sal)return;
     const v0=inp.value,t0=sal.textContent,c0=sal.className,kg=num(v0)||0;
     const volta=()=>{inp.value=v0;sal.textContent=t0;sal.className=c0;mais.classList.remove("tour-aperta")};
     TOUR.desfaz=volta;
-    const mais1=n=>()=>{dedoToca(mais);inp.value=nf1.format(r1(kg+n/10))};
+    const mais1=n=>()=>{dedoToca(mais);inp.value=nf1.format(r1(kg+n/10));sal.textContent="Atualizar";sal.classList.add("pronto")};
     tourAnima([
       [500,()=>{volta();dedoEntra(mais)}],
       [650,mais1(1)],[480,mais1(2)],[480,mais1(3)],
       [650,()=>dedoIr(sal)],
-      [700,()=>{dedoToca(sal);sal.textContent="Salvo";sal.classList.add("ok","pop");tourFaiscas(sal,9,["#FFC83D","#fff3c4"],34)}],
+      [700,()=>{dedoToca(sal);sal.textContent="Salvo";sal.classList.remove("pronto");sal.classList.add("ok","pop");tourFaiscas(sal,9,["#FFC83D","#fff3c4"],34)}],
       [1700,dedoSai]
     ],true);
   },
