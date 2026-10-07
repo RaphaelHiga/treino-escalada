@@ -123,8 +123,8 @@ p{margin:0}
 @keyframes pop{0%{transform:scale(.75)}100%{transform:scale(1)}}
 
 .fechar{margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
-/* reordenar: segurar o nome do exercício abre a lista compacta; arrastar muda a ordem */
-.ex-top h2{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* reordenar: segurar o nome ou o frango do exercício abre a lista compacta; arrastar muda a ordem */
+.ex-top h2,.ex-top .av{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .ordem-faixa{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--s1);font-size:14px;color:var(--ink2)}
 .ordem-faixa b{display:block;color:var(--ink);font-weight:700;margin-bottom:1px}
 .ex.ordem{padding:10px 0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;position:relative;background:var(--bg)}
@@ -1358,9 +1358,9 @@ document.addEventListener("pointerdown",ev=>{
 const soltar=()=>{if(!seg||seg.engole)return;clearTimeout(seg.t);if(seg.ativo){if(seg.carga)gravar();seg={engole:true};setTimeout(()=>{if(seg&&seg.engole)seg=null},350)}else seg=null};
 document.addEventListener("pointerup",soltar);document.addEventListener("pointercancel",soltar);
 document.addEventListener("click",ev=>{if(seg&&seg.engole){ev.stopPropagation();ev.preventDefault();seg=null}},true);
-document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp,.ex-top h2,.ex.ordem"))ev.preventDefault()});
+document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp,.ex-top h2,.ex-top .av,.ex.ordem"))ev.preventDefault()});
 /* ================= ordem dos exercícios =================
-   Segurar o nome de um exercício no Treino abre a lista compacta para reordenar.
+   Segurar o nome ou o frango de um exercício no Treino abre a lista compacta para reordenar.
    Nela, arrastar a linha muda a ordem, que fica gravada em D.ordem. */
 let ordToque=null,ordEngole=false;
 function entrarOrdem(k){
@@ -1389,7 +1389,7 @@ let arr=null;
 document.addEventListener("pointerdown",ev=>{
   if(U.tela!=="treino"||TOUR.ativo||U.folha||U.fila.length)return;
   if(!U.ordenar){
-    const h=ev.target.closest("#app .ex[data-ex] .ex-top h2");if(!h)return;
+    const h=ev.target.closest("#app .ex[data-ex] .ex-top h2,#app .ex[data-ex] .ex-top .av");if(!h)return;
     const k=h.closest(".ex").dataset.ex;clearTimeout(ordToque&&ordToque.t);
     ordToque={x:ev.clientX,y:ev.clientY,t:setTimeout(()=>{ordToque=null;entrarOrdem(k)},480)};
     return;
