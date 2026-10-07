@@ -123,6 +123,26 @@ p{margin:0}
 @keyframes pop{0%{transform:scale(.75)}100%{transform:scale(1)}}
 
 .fechar{margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
+/* reordenar: segurar o nome do exercício abre a lista compacta; arrastar ou usar as setas */
+.ex-top h2{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ordem-faixa{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--s1);font-size:14px;color:var(--ink2)}
+.ordem-faixa b{display:block;color:var(--ink);font-weight:700;margin-bottom:1px}
+.ordem-faixa button{flex:none;height:36px;padding:0 14px;border-radius:999px;background:var(--gema);color:var(--gema-ink);font-weight:700;font-size:13px}
+.ex.ordem{padding:10px 0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;position:relative;background:var(--bg)}
+.ex.ordem .ex-top{margin:0}
+.ex.ordem .ex-top>div:nth-child(3){min-width:0;flex:1}
+.ex.ordem h2{font-size:24px}
+.ex.ordem .proto{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-bts{display:flex;gap:4px;flex:none}
+.ord-bts button{width:40px;height:40px;border-radius:50%;background:var(--s1);display:grid;place-items:center;color:var(--ink)}
+.ord-bts button:disabled{opacity:.3}
+.ord-bts svg,.alca svg{width:20px;height:20px;display:block}
+.alca{flex:none;width:28px;display:grid;place-items:center;color:var(--ink3)}
+.ex.ordem.anda{transition:transform .2s cubic-bezier(.2,.8,.3,1)}
+.ex.ordem.arrasta{z-index:3;cursor:grabbing;background:var(--s2);border-radius:12px;border-top-color:transparent;box-shadow:0 10px 28px rgba(0,0,0,.6);margin:0 -10px;padding:10px}
+.ex.ordem.pega{animation:pega .45s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pega{40%{transform:scale(1.03)}}
+.fechar .btn+.btn{margin-top:10px}
 .btn{display:flex;align-items:center;justify-content:center;width:100%;height:52px;border-radius:12px;background:var(--ink);color:#000;font-weight:700;font-size:16px}
 .btn.sec{background:var(--s2);color:var(--ink)}
 .btn.perigo{background:#E84855;color:#fff}
@@ -748,6 +768,8 @@ const exDe=slot=>EX.find(e=>slot===e.k||slot===e.k+"E"||slot===e.k+"D");
 const slotsDe=e=>e.maos?[e.k+"E",e.k+"D"]:[e.k];
 const ladoDe=slot=>/E$/.test(slot)&&exDe(slot).maos?"esquerda":/D$/.test(slot)&&exDe(slot).maos?"direita":"";
 const fmtCarga=(e,v)=>e.lev?kgLev(v):kg(v);
+/* exercícios na ordem escolhida pela pessoa (D.ordem); os que faltarem vão para o fim */
+const exOrdem=()=>{const o=Array.isArray(D.ordem)?D.ordem:[];return EX.slice().sort((a,b)=>{const i=o.indexOf(a.k),j=o.indexOf(b.k);return (i<0?99+EX.indexOf(a):i)-(j<0?99+EX.indexOf(b):j)})};
 
 /* ================= dados ================= */
 function novo(){return {v:3,sessoes:{},pesos:[],cortes:JSON.parse(JSON.stringify(CORTES)),fases:{},carga:{}}}
@@ -763,6 +785,7 @@ function normalizar(d){
   if(Array.isArray(d.vistos))n.vistos=d.vistos;
   if(Array.isArray(d.conqPend))n.conqPend=d.conqPend;
   if(d.tutorial&&typeof d.tutorial==="object")n.tutorial=d.tutorial;
+  if(Array.isArray(d.ordem))n.ordem=d.ordem.filter((k,i,a)=>EX.some(e=>e.k===k)&&a.indexOf(k)===i);
   return n;
 }
 function migrarV2(d,v2){
@@ -1309,7 +1332,7 @@ const ABAS=["agenda","treino","evolucao"];
 let toque=null;
 document.addEventListener("touchstart",ev=>{
   const t=ev.touches[0];
-  if(ev.touches.length!==1||U.folha||U.fila.length||TOUR.ativo||ev.target.closest(".rolagem-x,input,.mao-svg,.stp,nav")){toque=null;return}
+  if(ev.touches.length!==1||U.folha||U.fila.length||TOUR.ativo||ev.target.closest(".rolagem-x,input,.mao-svg,.stp,nav,.ex.ordem")){toque=null;return}
   toque={x:t.clientX,y:t.clientY,t:Date.now(),mes:!!ev.target.closest(".ag-grade,.ag-sem")};
 },{passive:true});
 document.addEventListener("touchend",ev=>{
@@ -1339,12 +1362,93 @@ document.addEventListener("pointerdown",ev=>{
 const soltar=()=>{if(!seg||seg.engole)return;clearTimeout(seg.t);if(seg.ativo){if(seg.carga)gravar();seg={engole:true};setTimeout(()=>{if(seg&&seg.engole)seg=null},350)}else seg=null};
 document.addEventListener("pointerup",soltar);document.addEventListener("pointercancel",soltar);
 document.addEventListener("click",ev=>{if(seg&&seg.engole){ev.stopPropagation();ev.preventDefault();seg=null}},true);
-document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp"))ev.preventDefault()});
+document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp,.ex-top h2,.ex.ordem"))ev.preventDefault()});
+/* ================= ordem dos exercícios =================
+   Segurar o nome de um exercício no Treino abre a lista compacta para reordenar.
+   Nela, arrastar a linha (ou tocar nas setas) muda a ordem, que fica gravada em D.ordem. */
+let ordToque=null,ordEngole=false;
+function entrarOrdem(k){
+  clearTimeout(U.tRec);U.abertos={};U.ordenar=true;U.ordPega=k;
+  ordEngole=true;
+  if(navigator.vibrate)try{navigator.vibrate(15)}catch(x){}
+  render();
+  const f=$(".ordem-faixa"),t=$(".topo.fixo");
+  if(f){const lim=t?t.getBoundingClientRect().bottom:0,r=f.getBoundingClientRect();if(r.top<lim||r.top>innerHeight*.5)window.scrollTo(0,Math.max(0,window.scrollY+r.top-lim-8))}
+}
+/* grava a nova ordem; as linhas deslizam da posição antiga para a nova */
+function aplicarOrdem(ks,padrao){
+  const antes={},linhas=()=>document.querySelectorAll("#app .ex.ordem");
+  linhas().forEach(r=>{antes[r.dataset.ex]=r.getBoundingClientRect().top;r.classList.remove("arrasta","anda","pega");r.style.transform=r.style.transition=""});
+  if(padrao)delete D.ordem;else D.ordem=ks;
+  gravar();render();
+  if(RM)return;
+  linhas().forEach(r=>{
+    const d=antes[r.dataset.ex]-r.getBoundingClientRect().top;if(!d||Math.abs(d)<1)return;
+    r.style.transition="none";r.style.transform="translateY("+d+"px)";void r.offsetWidth;
+    r.style.transition="transform .26s cubic-bezier(.2,.8,.3,1)";r.style.transform="";
+    r.addEventListener("transitionend",()=>{r.style.transition=""},{once:true});
+  });
+}
+let arr=null;
+document.addEventListener("pointerdown",ev=>{
+  if(U.tela!=="treino"||TOUR.ativo||U.folha||U.fila.length)return;
+  if(!U.ordenar){
+    const h=ev.target.closest("#app .ex[data-ex] .ex-top h2");if(!h)return;
+    const k=h.closest(".ex").dataset.ex;clearTimeout(ordToque&&ordToque.t);
+    ordToque={x:ev.clientX,y:ev.clientY,t:setTimeout(()=>{ordToque=null;entrarOrdem(k)},480)};
+    return;
+  }
+  const row=ev.target.closest("#app .ex.ordem");if(!row||ev.target.closest("button")||arr)return;
+  const rows=[...document.querySelectorAll("#app .ex.ordem")],i=rows.indexOf(row);
+  arr={row:row,rows:rows,i:i,alvo:i,y0:ev.clientY,id:ev.pointerId,r:rows.map(x=>x.getBoundingClientRect())};
+  rows.forEach(x=>{x.classList.remove("pega");if(x!==row)x.classList.add("anda")});
+  row.classList.add("arrasta");
+  if(navigator.vibrate)try{navigator.vibrate(8)}catch(x){}
+});
+document.addEventListener("pointermove",ev=>{
+  if(ordToque&&Math.hypot(ev.clientX-ordToque.x,ev.clientY-ordToque.y)>10){clearTimeout(ordToque.t);ordToque=null}
+  if(!arr||ev.pointerId!==arr.id)return;
+  const R=arr.r,i=arr.i,n=R.length,dy=Math.max(R[0].top-R[i].top,Math.min(R[n-1].top-R[i].top,ev.clientY-arr.y0));
+  arr.row.style.transform="translateY("+dy+"px)";
+  /* troca de lugar quando a borda da linha arrastada passa do meio da vizinha */
+  const cima=R[i].top+dy,baixo=R[i].bottom+dy;let alvo=i;
+  for(let j=0;j<n;j++){const c=R[j].top+R[j].height/2;if(j<i&&cima<c&&j<alvo)alvo=j;if(j>i&&baixo>c)alvo=j}
+  if(alvo!==arr.alvo){arr.alvo=alvo;if(navigator.vibrate)try{navigator.vibrate(5)}catch(x){}}
+  arr.rows.forEach((x,j)=>{if(j===i)return;const p=j>i&&j<=alvo?R[j-1].top-R[j].top:j<i&&j>=alvo?R[j+1].top-R[j].top:0;x.style.transform=p?"translateY("+p+"px)":""});
+},{passive:true});
+const soltarOrdem=ev=>{
+  if(ordToque){clearTimeout(ordToque.t);ordToque=null}
+  if(ordEngole)setTimeout(()=>{ordEngole=false},350);
+  if(!arr||ev.pointerId!==arr.id)return;
+  const a=arr;arr=null;
+  if(ev.type==="pointerup"&&a.alvo!==a.i){const ks=a.rows.map(x=>x.dataset.ex),k=ks.splice(a.i,1)[0];ks.splice(a.alvo,0,k);aplicarOrdem(ks);return}
+  a.rows.forEach(x=>{x.classList.add("anda");x.style.transform=""});a.row.classList.remove("arrasta");
+  setTimeout(()=>a.rows.forEach(x=>x.classList.remove("anda")),220);
+};
+document.addEventListener("pointerup",soltarOrdem);document.addEventListener("pointercancel",soltarOrdem);
+/* o toque que abriu a reordenação não vale como clique (não abre nem recolhe o exercício) */
+document.addEventListener("click",ev=>{if(ordEngole){ordEngole=false;ev.stopPropagation();ev.preventDefault()}},true);
 
 /* ================= telas ================= */
 const pillSeq=seq=>seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"";
 const IC_FALHA='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const IC_FEITO='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SETA=d=>'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+(d<0?"M6 14l6-6 6 6":"M6 10l6 6 6-6")+'" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ALCA='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function telaOrdem(){
+  const ex=exOrdem(),pad_=!Array.isArray(D.ordem)||ex.every((e,i)=>e.k===EX[i].k);
+  let h='<div class="ordem-faixa"><span><b>Ordem dos exercícios</b>Arraste para mudar a ordem ou use as setas.</span><button data-a="ordem-ok">Pronto</button></div>';
+  ex.forEach((e,i)=>{
+    const st=estadoAve(e);
+    h+='<section class="ex ordem'+(U.ordPega===e.k?" pega":"")+'" data-ex="'+e.k+'"><div class="ex-top"><span class="alca">'+ALCA+'</span><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
+      '<div><h2>'+e.nome+'</h2><p class="proto">'+e.proto+'</p></div>'+
+      '<div class="ord-bts"><button data-a="mover" data-v="'+e.k+'" data-d="-1" aria-label="Subir '+e.nome+'"'+(i===0?" disabled":"")+'>'+SETA(-1)+'</button>'+
+      '<button data-a="mover" data-v="'+e.k+'" data-d="1" aria-label="Descer '+e.nome+'"'+(i===ex.length-1?" disabled":"")+'>'+SETA(1)+'</button></div></div></section>';
+  });
+  h+='<div class="fechar"><button class="btn" data-a="ordem-ok">Pronto</button>'+(pad_?"":'<button class="btn sec" data-a="ordem-padrao">Voltar à ordem original</button>')+'</div>';
+  U.ordPega=null;
+  return h;
+}
 function telaTreino(){
   const s=D.sessoes[U.dia],ehHoje=U.dia===hoje(),seq=sequencia(),p=pesoAtual();
   const dataTxt=dt(U.dia).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"}),dataCurta=dataTxt.replace("-feira","");
@@ -1356,6 +1460,7 @@ function telaTreino(){
   {const ub=D.ultimoBackup,dias=ub?diasEntre(ub,hoje()):null;
     if(ehHoje&&!U.avisoFechado&&datas().length>=5&&(dias===null||dias>=30))
       h+='<div class="aviso"><span>'+(dias===null?"Você ainda não fez backup. Os treinos ficam só neste aparelho.":"Último backup há "+dias+" dias.")+'</span><span style="display:flex;gap:14px"><button data-a="aviso-fechar" style="color:var(--ink3)">Depois</button><button data-a="exportar">Exportar</button></span></div>';}
+  if(U.ordenar)return h+telaOrdem();
   const modo=ehHoje?null:U.modo;   /* "peso" ou "sessao" quando veio de um + da Evolução */
   if(!ehHoje)h+='<div class="retro-faixa"><span><b>'+(modo==="peso"?"Peso de dia passado":modo==="sessao"?"Sessão de dia passado":"Registro de dia passado")+'</b>Tudo aqui vai para '+esc(dataTxt)+', não para hoje.</span></div>';
   if(datas().length<4&&modo!=="peso")h+='<p class="dica">Ajuste a carga e toque no botão: 1 toque marca como feito, 2 toques como falha, 3 toques limpa.</p>';
@@ -1367,7 +1472,7 @@ function telaTreino(){
       '<div class="linha"><div class="stp"><button data-a="peso-menos" aria-label="Menos 100 g">−</button><input data-a="peso-val" inputmode="decimal" value="'+nf1.format(num(pr.v)||0)+'" aria-label="Peso em kg"><span>kg</span><button data-a="peso-mais" aria-label="Mais 100 g">+</button></div>'+
       '<div class="sets"><button class="set largo'+(igual?" ok":"")+(U.pop==="peso"?" pop":"")+'" data-a="peso-salvar">'+(igual?"Salvo":pd?"Atualizar":"Salvar")+'</button></div></div></section>';}
   if(modo==="peso"){h+='<div class="fechar"><button class="btn sec" data-a="tela" data-v="evolucao">Voltar para a Evolução</button></div>';U.pop=null;return h}
-  EX.forEach(e=>{
+  exOrdem().forEach(e=>{
     const st=estadoAve(e),mr=melhorRel(e,somaDias(hoje(),-JANELA)).rel;
     const feito=registrado(s,e),comFalha=feito&&falhouEx(s,e);
     if(feito&&!U.abertos[e.k]){
@@ -2268,11 +2373,11 @@ function render(){
    Cada tela, janela ou dia visitado vira um passo no histórico: voltar leva ao anterior.
    Na primeira tela, voltar pergunta antes de sair do app. */
 const Nav={ult:null,quieto:false};
-const navChave=()=>JSON.stringify([U.tela,U.card,U.folha,U.dia,U.modo,U.mes]);
+const navChave=()=>JSON.stringify([U.tela,U.card,U.folha,U.dia,U.modo,U.mes,!!U.ordenar]);
 function navGuardar(){
   if(Nav.quieto||TOUR.ativo||!history.pushState)return;
   const k=navChave();if(k===Nav.ult)return;
-  Nav.ult=k;try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes}},"")}catch(x){}
+  Nav.ult=k;try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes,ordenar:!!U.ordenar}},"")}catch(x){}
 }
 function navQuieto(){Nav.quieto=true;render();Nav.quieto=false;Nav.ult=navChave();try{history.pushState({v:{tela:U.tela,card:U.card,dia:U.dia,modo:U.modo}},"")}catch(x){}}
 window.addEventListener("popstate",ev=>{
@@ -2286,7 +2391,7 @@ window.addEventListener("popstate",ev=>{
   }
   if(U.fila.length){U.fila.shift();navQuieto();return}    /* voltar fecha a comemoração */
   const antes=navChave(),v=st.v||{};
-  U.tela=v.tela||"treino";U.card=v.card||null;U.mes=v.mes||null;U.dia=v.dia&&v.dia<=hoje()?v.dia:hoje();U.modo=v.modo||null;U.folha=null;U.imp=null;
+  U.tela=v.tela||"treino";U.card=v.card||null;U.mes=v.mes||null;U.dia=v.dia&&v.dia<=hoje()?v.dia:hoje();U.modo=v.modo||null;U.folha=null;U.imp=null;U.ordenar=!!v.ordenar;
   if(navChave()===antes){history.back();return}           /* passo repetido: pula */
   Nav.quieto=true;render();Nav.quieto=false;Nav.ult=navChave();
 });
@@ -2302,7 +2407,11 @@ document.addEventListener("click",ev=>{
     case "feito":marcarTodas(sl);break;
     case "menos":ajustarCarga(sl,-.5);break;
     case "mais":ajustarCarga(sl,.5);break;
-    case "tela":U.tela=v;U.folha=null;U.card=null;U.modo=null;if(v==="treino")U.dia=hoje();render();break;
+    case "tela":U.tela=v;U.folha=null;U.card=null;U.modo=null;U.ordenar=false;if(v==="treino")U.dia=hoje();render();break;
+    case "mover":{const ks=exOrdem().map(e=>e.k),i=ks.indexOf(v),j=i+ +b.dataset.d;if(i<0||j<0||j>=ks.length)break;ks.splice(i,1);ks.splice(j,0,v);aplicarOrdem(ks);
+      {const nb=document.querySelector('#app [data-a=mover][data-v="'+v+'"][data-d="'+b.dataset.d+'"]');if(nb&&!nb.disabled)nb.focus()}break}
+    case "ordem-ok":U.ordenar=false;render();break;
+    case "ordem-padrao":aplicarOrdem(EX.map(e=>e.k),true);toast("Ordem original");break;
     case "dia":{const n=somaDias(U.dia,+v);if(n<=hoje()){U.dia=n;U.modo=null;render()}break}
     case "hoje":U.dia=hoje();U.modo=null;render();break;
     case "abrir":U.dia=v;U.tela="treino";U.armado=null;U.modo=null;U.folha=null;render();break;
@@ -2362,7 +2471,7 @@ document.addEventListener("change",ev=>{
 document.addEventListener("keydown",ev=>{
   if(TOUR.ativo){tourTecla(ev);return}
   if(ev.key==="Enter"&&ev.target.matches("input[data-a]"))ev.target.blur();
-  if(ev.key==="Escape"){if(U.fila.length){U.fila.shift();render()}else if(U.folha){U.folha=null;U.imp=null;render()}}
+  if(ev.key==="Escape"){if(U.fila.length){U.fila.shift();render()}else if(U.folha){U.folha=null;U.imp=null;render()}else if(U.ordenar){U.ordenar=false;render()}}
 });
 $("#arquivo").addEventListener("change",ev=>{const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importar(String(r.result));r.readAsText(f);ev.target.value=""});
 let diaAberto=hoje();
