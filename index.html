@@ -123,21 +123,18 @@ p{margin:0}
 @keyframes pop{0%{transform:scale(.75)}100%{transform:scale(1)}}
 
 .fechar{margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
-/* reordenar: segurar o nome do exercício abre a lista compacta; arrastar ou usar as setas */
+/* reordenar: segurar o nome do exercício abre a lista compacta; arrastar muda a ordem */
 .ex-top h2{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .ordem-faixa{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--s1);font-size:14px;color:var(--ink2)}
 .ordem-faixa b{display:block;color:var(--ink);font-weight:700;margin-bottom:1px}
 .ordem-faixa button{flex:none;height:36px;padding:0 14px;border-radius:999px;background:var(--gema);color:var(--gema-ink);font-weight:700;font-size:13px}
 .ex.ordem{padding:10px 0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;position:relative;background:var(--bg)}
 .ex.ordem .ex-top{margin:0}
-.ex.ordem .ex-top>div:nth-child(3){min-width:0;flex:1}
+.ex.ordem .ex-top>div:nth-child(2){min-width:0;flex:1}
 .ex.ordem h2{font-size:24px}
 .ex.ordem .proto{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ord-bts{display:flex;gap:4px;flex:none}
-.ord-bts button{width:40px;height:40px;border-radius:50%;background:var(--s1);display:grid;place-items:center;color:var(--ink)}
-.ord-bts button:disabled{opacity:.3}
-.ord-bts svg,.alca svg{width:20px;height:20px;display:block}
-.alca{flex:none;width:28px;display:grid;place-items:center;color:var(--ink3)}
+.alca svg{width:22px;height:22px;display:block}
+.alca{flex:none;width:44px;height:44px;display:grid;place-items:center;color:var(--ink2)}
 .ex.ordem.anda{transition:transform .2s cubic-bezier(.2,.8,.3,1)}
 .ex.ordem.arrasta{z-index:3;cursor:grabbing;background:var(--s2);border-radius:12px;border-top-color:transparent;box-shadow:0 10px 28px rgba(0,0,0,.6);margin:0 -10px;padding:10px}
 .ex.ordem.pega{animation:pega .45s cubic-bezier(.3,1.8,.5,1)}
@@ -1365,7 +1362,7 @@ document.addEventListener("click",ev=>{if(seg&&seg.engole){ev.stopPropagation();
 document.addEventListener("contextmenu",ev=>{if(ev.target.closest(".stp,.ex-top h2,.ex.ordem"))ev.preventDefault()});
 /* ================= ordem dos exercícios =================
    Segurar o nome de um exercício no Treino abre a lista compacta para reordenar.
-   Nela, arrastar a linha (ou tocar nas setas) muda a ordem, que fica gravada em D.ordem. */
+   Nela, arrastar a linha muda a ordem, que fica gravada em D.ordem. */
 let ordToque=null,ordEngole=false;
 function entrarOrdem(k){
   clearTimeout(U.tRec);U.abertos={};U.ordenar=true;U.ordPega=k;
@@ -1433,17 +1430,14 @@ document.addEventListener("click",ev=>{if(ordEngole){ordEngole=false;ev.stopProp
 const pillSeq=seq=>seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"";
 const IC_FALHA='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const IC_FEITO='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const SETA=d=>'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+(d<0?"M6 14l6-6 6 6":"M6 10l6 6 6-6")+'" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ALCA='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function telaOrdem(){
   const ex=exOrdem(),pad_=!Array.isArray(D.ordem)||ex.every((e,i)=>e.k===EX[i].k);
-  let h='<div class="ordem-faixa"><span><b>Ordem dos exercícios</b>Arraste para mudar a ordem ou use as setas.</span><button data-a="ordem-ok">Pronto</button></div>';
-  ex.forEach((e,i)=>{
+  let h='<div class="ordem-faixa"><span><b>Ordem dos exercícios</b>Arraste o exercício para cima ou para baixo.</span><button data-a="ordem-ok">Pronto</button></div>';
+  ex.forEach(e=>{
     const st=estadoAve(e);
-    h+='<section class="ex ordem'+(U.ordPega===e.k?" pega":"")+'" data-ex="'+e.k+'"><div class="ex-top"><span class="alca">'+ALCA+'</span><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
-      '<div><h2>'+e.nome+'</h2><p class="proto">'+e.proto+'</p></div>'+
-      '<div class="ord-bts"><button data-a="mover" data-v="'+e.k+'" data-d="-1" aria-label="Subir '+e.nome+'"'+(i===0?" disabled":"")+'>'+SETA(-1)+'</button>'+
-      '<button data-a="mover" data-v="'+e.k+'" data-d="1" aria-label="Descer '+e.nome+'"'+(i===ex.length-1?" disabled":"")+'>'+SETA(1)+'</button></div></div></section>';
+    h+='<section class="ex ordem'+(U.ordPega===e.k?" pega":"")+'" data-ex="'+e.k+'"><div class="ex-top"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
+      '<div><h2>'+e.nome+'</h2><p class="proto">'+e.proto+'</p></div><span class="alca">'+ALCA+'</span></div></section>';
   });
   h+='<div class="fechar"><button class="btn" data-a="ordem-ok">Pronto</button>'+(pad_?"":'<button class="btn sec" data-a="ordem-padrao">Voltar à ordem original</button>')+'</div>';
   U.ordPega=null;
@@ -2408,8 +2402,6 @@ document.addEventListener("click",ev=>{
     case "menos":ajustarCarga(sl,-.5);break;
     case "mais":ajustarCarga(sl,.5);break;
     case "tela":U.tela=v;U.folha=null;U.card=null;U.modo=null;U.ordenar=false;if(v==="treino")U.dia=hoje();render();break;
-    case "mover":{const ks=exOrdem().map(e=>e.k),i=ks.indexOf(v),j=i+ +b.dataset.d;if(i<0||j<0||j>=ks.length)break;ks.splice(i,1);ks.splice(j,0,v);aplicarOrdem(ks);
-      {const nb=document.querySelector('#app [data-a=mover][data-v="'+v+'"][data-d="'+b.dataset.d+'"]');if(nb&&!nb.disabled)nb.focus()}break}
     case "ordem-ok":U.ordenar=false;render();break;
     case "ordem-padrao":aplicarOrdem(EX.map(e=>e.k),true);toast("Ordem original");break;
     case "dia":{const n=somaDias(U.dia,+v);if(n<=hoje()){U.dia=n;U.modo=null;render()}break}
