@@ -82,7 +82,7 @@ p{margin:0}
 .forta-top b{margin:0}
 .esf-selo{flex:none;padding:3px 10px;border-radius:999px;background:var(--s2);font-size:12px;color:var(--ink3)}
 .esf-selo span{font-weight:700;color:var(--gema)}
-.fx-grade{display:grid;grid-template-columns:max-content 1fr;column-gap:18px;row-gap:10px;padding:4px 0 2px}
+.fx-grade{display:grid;grid-template-columns:max-content 1fr;align-items:center;column-gap:18px;row-gap:10px;padding:4px 0 2px}
 .fx{display:contents}
 .fx-nm{color:var(--ink)}
 .fx-rs{display:grid;gap:3px;font-variant-numeric:tabular-nums}
@@ -333,8 +333,9 @@ button.pill{cursor:pointer}
 .legenda i.ovo-falha{width:10px;height:12px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpolyline points='0,12.5 4,9 7.5,13 11,8.5 14.5,12.5 20,9' fill='none' stroke='%231b1a17' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% 100% no-repeat,var(--d3);vertical-align:-2px}
 .ag-dia.hoje{box-shadow:0 0 0 2px var(--ink)}
 .ag-dia.fut{opacity:.3}
-.dia-cenas{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin:6px 0 4px}
-.dia-cena{display:grid;justify-items:center;align-content:start;gap:3px;text-align:center}
+/* uma coluna por cena, sempre na mesma linha; frango, título e texto alinhados entre as cenas */
+.dia-cenas{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));column-gap:10px;margin:6px 0 14px}
+.dia-cena{display:grid;grid-row:span 3;grid-template-rows:subgrid;row-gap:6px;justify-items:center;align-items:start;text-align:center}
 .dia-cena .msc-g{width:100%;max-width:120px}.dia-cena .msc-g svg{width:100%;height:auto;display:block}
 .dia-cena b{font-family:var(--disp);font-weight:400;font-size:20px;color:var(--gema);line-height:1}
 .dia-cena span{font-size:11px;color:var(--ink3);line-height:1.3}
@@ -2097,10 +2098,10 @@ function folhaDia(d){
   const tit=dt(d).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
   let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+esc(tit.charAt(0).toUpperCase()+tit.slice(1))+'</h2>'+
     '<p class="sub">'+(!s?(d<hoje()?"Sem registro: conta como dia de descanso.":"Nada registrado ainda."):s.descanso?"Registrado como dia de descanso.":treinou(s)?"Dia de treino.":"Registro sem treino.")+'</p>';
-  if(ev.length)h+='<div class="dia-cenas">'+ev.map(x=>{const c=dadosCena(x);return '<div class="dia-cena"><div class="msc-g">'+c.arte+'</div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div>'}).join("")+'</div>';
+  if(ev.length)h+='<div class="dia-cenas" style="--n:'+ev.length+'">'+ev.map(x=>{const c=dadosCena(x);return '<div class="dia-cena"><div class="msc-g">'+c.arte+'</div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div>'}).join("")+'</div>';
   const li=[];let forta="";
   if(s){
-    /* fortalecimento: nome numa coluna, resultado logo ao lado (mãos iguais viram uma linha só) */
+    /* fortalecimento: nome numa coluna, resultado logo ao lado (exercício por mão: esq e dir, nome no meio) */
     const res=(e,sl)=>{const a=(s.s[sl]||[]).filter(Boolean),ok=a.filter(x=>x.ok);
       if(!a.length)return {c:"",t:"—"};
       if(ok.length===3)return {c:"ok",t:"3 × "+fmtCarga(e,ok[0].c)};
@@ -2108,9 +2109,9 @@ function folhaDia(d){
       return {c:"",t:ok.length+" de 3 séries"}};
     const linha=(r,lado)=>'<span class="fx-r">'+'<i class="fx-pt '+r.c+'"></i>'+(lado?'<span class="fx-lado">'+lado+'</span>':"")+esc(r.t)+'</span>';
     const ex=EX.filter(e=>slotsDe(e).some(sl=>((s.s||{})[sl]||[]).some(Boolean))).map(e=>{
-      const rs=slotsDe(e).map(sl=>res(e,sl)),igual=rs.length===2&&rs[0].c===rs[1].c&&rs[0].t===rs[1].t;
+      const rs=slotsDe(e).map(sl=>res(e,sl));
       return '<div class="fx"><span class="fx-nm">'+esc(e.nome)+'</span><span class="fx-rs">'+
-        (!e.maos?linha(rs[0]):igual?linha({c:rs[0].c,t:rs[0].t+(rs[0].t==="—"?"":" cada mão")}):linha(rs[0],"Esq")+linha(rs[1],"Dir"))+'</span></div>'});
+        (e.maos?linha(rs[0],"Esq")+linha(rs[1],"Dir"):linha(rs[0]))+'</span></div>'});
     if(ex.length)forta='<li class="forta"><div class="forta-top"><b>Fortalecimento</b>'+(temEsf(s)?'<span class="esf-selo">Intensidade <span>'+s.esforco+'</span>/10</span>':"")+'</div><div class="fx-grade">'+ex.join("")+'</div></li>';
     if(s.dor&&Object.keys(s.dor).length)li.push(["Dor",dorTexto(s.dor)]);
     else if(s.esforco!=null||s.escalada!=null)li.push(["Dor","Sem dor"]);
