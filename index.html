@@ -1259,6 +1259,12 @@ function pesoRef(){
   const ant=D.pesos.filter(x=>x.data<U.dia);
   return {p:ant.length?ant[ant.length-1]:D.pesos[0]||null,dia:false};
 }
+/* hoje, ontem, há N dias (até 13), semanas (até 59 dias), meses (até 364) e anos */
+function tempoAtras(d){
+  if(d<=0)return "hoje";if(d===1)return "ontem";if(d<14)return "há "+d+" dias";
+  if(d<60)return "há "+Math.floor(d/7)+" semanas";if(d<365)return "há "+Math.min(11,Math.floor(d/30))+" meses";
+  const a=Math.floor(d/365);return a===1?"há 1 ano":"há "+a+" anos";
+}
 /* botão do peso, conforme o número no campo: Salvo (bate com o do dia), Atualizar (mudou),
    Manter (repete o último) ou Salvar (primeira pesagem). A linha de baixo
    mostra o último registro. Logo depois de salvar, tocar em Salvo desfaz (U.pesoDesfaz guarda
@@ -1268,9 +1274,9 @@ function estadoPeso(){
   const {p,dia}=pesoRef(),v=r1(num(pesoRascunho().v)||0),ig=!!p&&r1(p.kg)===v;
   if(!p)return {rot:"Salvar",cls:v>0?"pronto":"",sub:"Base para calcular a força relativa"};
   const atras=Math.max(0,diasEntre(p.data,hoje()));
-  const ult="Último registro: "+nf1.format(p.kg)+" kg em "+dm(p.data)+" | "+(atras===0?"hoje":atras===1?"ontem":"há "+atras+" dias");
+  const ult="Último registro: "+nf1.format(p.kg)+" kg | "+tempoAtras(atras);
   if(dia)return ig?{rot:"Salvo",cls:"ok",sub:podeDesfazerPeso()?"Toque em Salvo para desfazer":ult}:{rot:"Atualizar",cls:"pronto",sub:ult};
-  return {rot:ig?"Manter":"Atualizar",cls:ig?"":"pronto",sub:ult,alerta:U.dia===hoje()&&atras>7};
+  return {rot:ig?"Manter":"Atualizar",cls:ig?"":"pronto",sub:ult,alerta:U.dia===hoje()&&atras>=60};
 }
 function botaoPeso(){
   const b=document.querySelector("[data-a=peso-salvar]"),sub=document.querySelector("[data-peso-sub]");if(!b)return;

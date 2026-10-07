@@ -4,7 +4,7 @@
 // abre na hora com a cópia guardada e atualiza em segundo plano para a próxima vez.
 // Se você publicar uma atualização, aumente o número em CACHE (v56 -> v57).
 // As fontes ficam no próprio app e entram aqui: o app abre com a fonte certa mesmo sem sinal.
-const CACHE = "diario-escalada-app-v68";
+const CACHE = "diario-escalada-app-v71";
 const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
   "fontes/archivo.woff2", "fontes/bebas-neue.woff2"];
 const ESPERA_MS = 2500;
