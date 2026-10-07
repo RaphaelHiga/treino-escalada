@@ -25,6 +25,14 @@ App de treino de escalada em português (pt-BR), feito como PWA de um arquivo s�
 - Textos curtos e diretos, sem travessão, no tom do frango.
 - Teste no Chromium com Playwright (já instalado globalmente) antes de enviar.
 
+## Desempenho
+
+Com meses de registros, as contas de fase e de conquistas rodam milhares de vezes por toque. Três atalhos seguram isso:
+
+- `datas()` devolve a lista guardada e **congelada**: para `reverse()` ou `sort()`, copie antes com `.slice()`.
+- `diasEntre` usa o número de cada dia guardado (`diaN`), sem criar datas.
+- Durante o `render()`, `progressoFase`, `dorRecente` e `calcConquistas` ficam guardados em `MEMO` (só enquanto o render roda). Por isso o render nunca mexe em `D.sessoes`, `D.pesos` nem `D.cortes`; mudanças de dados acontecem antes, nas ações.
+
 ## Pendências
 
 - [ ] **Revisar os treinos.** Os 9 exercícios novos foram sugestões iniciais e ainda não foram validados pelo usuário:
