@@ -599,8 +599,10 @@ body.em-tour .folha{padding-bottom:40vh}
 .ex-btn{width:100%;text-align:left;margin-bottom:0!important}
 .ex.fechado .av{width:36px;height:36px}
 .ex.fechado .ex-top h2{font-size:22px}
-.ex.fechado.recolhe{animation:recolhe .45s cubic-bezier(.2,.8,.3,1);overflow:hidden}
-@keyframes recolhe{from{max-height:230px;opacity:.4}to{max-height:90px;opacity:1}}
+/* abrir/recolher: o conteúdo antigo apaga, o bloco desliza até a nova altura e o novo conteúdo aparece */
+.ex.some>*{opacity:0;transition:opacity .18s ease-out}
+.ex.surge>*{animation:surge .32s ease-out both}
+@keyframes surge{from{opacity:0}}
 /* ===== animações ===== */
 .set.ok{background:var(--s1) linear-gradient(var(--gema),var(--gema)) no-repeat 0 0/100% 100%}
 .set.ok.pop{animation:enche .3s cubic-bezier(.2,.8,.3,1),pop .42s cubic-bezier(.3,1.8,.5,1)}
@@ -999,7 +1001,7 @@ const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="2
 const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z" fill="#FF8C1A"/><path d="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z" fill="#FFC83D"/></svg>';
 
 /* ================= estado de tela ================= */
-const U={abertos:{},card:null,recolheu:null,mao:"esquerda",imp:null,avisoFechado:false,armado:null,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
+const U={abertos:{},card:null,mao:"esquerda",imp:null,avisoFechado:false,armado:null,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
 
 /* ================= eventos (celebrações) ================= */
 const celebrados=new Set();
@@ -1048,8 +1050,7 @@ function marcarTodas(slot){
   U.fx={slot:slot,i:"all",novo:virouOk,falha:cheio};
   /* feito ou falha em todas as mãos: mostra o resultado um instante e recolhe */
   {const ex=exDe(slot);if(!falhou&&registrado(ss,ex)){
-    U.abertos[ex.k]=true;clearTimeout(U.tRec);
-    U.tRec=setTimeout(()=>{delete U.abertos[ex.k];U.recolheu=ex.k;if(U.tela==="treino"&&!U.folha)render();U.recolheu=null},1600);
+    U.abertos[ex.k]=true;recolherDepois(ex.k);
   }}
   let ev=virouOk?eventosSerie(slot):[];
   ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
@@ -1057,6 +1058,46 @@ function marcarTodas(slot){
   if(navigator.vibrate)try{navigator.vibrate(virouOk?12:cheio?[8,40,8]:6)}catch(x){}
   U.fila=U.fila.concat(ev);
   U.segurarConq=true;render();
+}
+/* mostra o resultado um instante e recolhe sozinho. A borda de baixo do bloco fica parada,
+   então o próximo exercício não sai de debaixo do dedo: quem desliza é o que está acima */
+function recolherDepois(k){
+  clearTimeout(U.tRec);
+  U.tRec=setTimeout(()=>{
+    if(U.tela!=="treino"||U.folha){delete U.abertos[k];return}
+    const v=document.querySelector('#app [data-ex="'+k+'"]');
+    if(v&&!RM)v.classList.add("some");
+    U.tRec=setTimeout(()=>{delete U.abertos[k];if(U.tela==="treino"&&!U.folha)animarBloco(k,render,"base");else if(v)v.classList.remove("some")},RM?0:180);
+  },1600);
+}
+/* troca um exercício (aberto ⇄ recolhido) sem pulo: a altura vai deslizando da antiga para a nova.
+   ancora "topo": a borda de cima fica parada (o que foi tocado não foge do dedo);
+   "base": a de baixo fica parada e a rolagem acompanha (o que vem depois não se mexe) */
+function animarBloco(k,fazer,ancora){
+  const ache=()=>document.querySelector('#app [data-ex="'+k+'"]');
+  const v=ache(),y0=window.scrollY;
+  if(!v){fazer();return}
+  const h0=v.getBoundingClientRect().height;
+  fazer();
+  const n=ache();if(!n||n===v)return;
+  const h1=n.getBoundingClientRect().height,dh=h1-h0;
+  const topo=document.querySelector(".topo.fixo"),lim=topo?topo.getBoundingClientRect().bottom:0;
+  /* sem animação, ou o bloco já passou do topo da tela: só segura a vista no lugar */
+  if(RM||Math.abs(dh)<2||n.getBoundingClientRect().top<lim){if(ancora==="base"||n.getBoundingClientRect().top<lim)window.scrollTo(0,Math.max(0,y0+dh));return}
+  n.style.height=h0+"px";n.style.overflow="hidden";n.classList.add("surge");
+  window.scrollTo(0,y0);
+  let segue=ancora==="base";const solta=()=>{segue=false};
+  addEventListener("touchstart",solta,{once:true,passive:true});addEventListener("wheel",solta,{once:true,passive:true});
+  const t0=performance.now(),dur=Math.min(520,Math.max(300,Math.abs(dh)*1.6));
+  const passo=t=>{
+    const q=Math.min(1,(t-t0)/dur),e=q<.5?4*q*q*q:1-Math.pow(-2*q+2,3)/2,h=h0+dh*e;
+    if(!n.isConnected)return;
+    n.style.height=h+"px";
+    if(segue)window.scrollTo(0,Math.max(0,y0+h-h0));
+    if(q<1)requestAnimationFrame(passo);
+    else{n.style.height=n.style.overflow="";n.classList.remove("surge");removeEventListener("touchstart",solta);removeEventListener("wheel",solta)}
+  };
+  requestAnimationFrame(passo);
 }
 function marcar(slot,i){
   const antesTinha=treinou(D.sessoes[U.dia]);
@@ -1071,8 +1112,7 @@ function marcar(slot,i){
   U.pop=slot+":"+i;
   U.fx={slot:slot,i:i,novo:virouOk};
   {const ex=exDe(slot);if(virouOk&&slotsDe(ex).every(sl=>{const q=s.s[sl]||[];return q.length===3&&q.every(x=>x&&x.ok)})){
-    U.abertos[ex.k]=true;
-    setTimeout(()=>{delete U.abertos[ex.k];U.recolheu=ex.k;if(U.tela==="treino"&&!U.folha)render();U.recolheu=null},1600);
+    U.abertos[ex.k]=true;recolherDepois(ex.k);
   }}
   let ev=virouOk?eventosSerie(slot):[];
   ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
@@ -1332,7 +1372,7 @@ function telaTreino(){
     const feito=registrado(s,e),comFalha=feito&&falhouEx(s,e);
     if(feito&&!U.abertos[e.k]){
       const res=slotsDe(e).map(sl=>(e.maos?(/E$/.test(sl)?"Esq ":"Dir "):"")+(s.s[sl][0].ok?"":"falha ")+fmtCarga(e,s.s[sl][0].c)).join(" · ");
-      h+='<section class="ex fechado'+(U.recolheu===e.k?" recolhe":"")+'" data-ex="'+e.k+'"><button class="ex-top ex-btn" data-a="expandir" data-v="'+e.k+'" aria-label="'+e.nome+(comFalha?" com falha":" completo")+'. Toque para abrir">'+
+      h+='<section class="ex fechado" data-ex="'+e.k+'"><button class="ex-top ex-btn" data-a="expandir" data-v="'+e.k+'" aria-label="'+e.nome+(comFalha?" com falha":" completo")+'. Toque para abrir">'+
         '<div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div><div><div class="tit"><h2>'+e.nome+'</h2>'+(comFalha?'<span class="selo falha">✕</span>':'<span class="selo">✓</span>')+'</div><p class="proto'+(comFalha?" fal":"")+'">3 séries · '+esc(res)+'</p></div>'+
         (mr!==null?'<span class="rel">'+pct(mr)+'<small>do peso</small></span>':"")+'</button></section>';
       return;
@@ -2269,8 +2309,8 @@ document.addEventListener("click",ev=>{
     case "excluir":excluirSessao(v);break;
     case "excluir-peso":excluirPeso(v);break;
     case "sessao":abrirSessao();break;
-    case "expandir":U.abertos[v]=true;clearTimeout(U.tRec);render();break;
-    case "recolher":delete U.abertos[v];U.recolheu=v;render();U.recolheu=null;break;
+    case "expandir":U.abertos[v]=true;clearTimeout(U.tRec);animarBloco(v,render,"topo");break;
+    case "recolher":delete U.abertos[v];clearTimeout(U.tRec);animarBloco(v,render,"topo");break;
     case "card":U.card=v||null;render.ultima=null;render();break;
     case "info":U.info=v;U.folha="info";U.abre=true;D.vistos=D.vistos||[];if(D.vistos.indexOf(v)<0){D.vistos.push(v);gravar()}render();break;
     case "conq":U.conq=v;U.folha="conq";U.abre=true;render();break;
