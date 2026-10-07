@@ -22,6 +22,7 @@ App de treino de escalada em português (pt-BR), feito como PWA de um arquivo s�
 ## Padrões de interface
 
 - Abrir, recolher, ligar e desligar blocos usa `animarBloco(k, render, ancora)`: a altura desliza, sem pulo. Respeite `RM` (reduzir movimento).
+- Excluir é um toque só, com Desfazer no aviso: `toast(texto, desfazer)` (ver `excluirComDesfazer`).
 - Textos curtos e diretos, sem travessão, no tom do frango.
 - Teste no Chromium com Playwright (já instalado globalmente) antes de enviar.
 
