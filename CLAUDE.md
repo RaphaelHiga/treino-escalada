@@ -23,6 +23,8 @@ App de treino de escalada em português (pt-BR), feito como PWA de um arquivo s�
 
 - Abrir, recolher, ligar e desligar blocos usa `animarBloco(k, render, ancora)`: a altura desliza, sem pulo. Respeite `RM` (reduzir movimento).
 - Excluir é um toque só, com Desfazer no aviso: `toast(texto, desfazer)` (ver `excluirComDesfazer`).
+- Chama da sequência: use `chama(n)` (nunca `CHAMA` direto). Ela cresce em 7, 30 e 100 dias (`nivelChama`); tamanho e brilho ficam no CSS `.ch1` a `.ch3`.
+- Som: `cocorico()` é sintetizado com Web Audio (sem arquivo) e toca em `animarEvolucao`. `D.som === false` desliga; sem escolha salva, fica ligado.
 - Textos curtos e diretos, sem travessão, no tom do frango.
 - Teste no Chromium com Playwright (já instalado globalmente) antes de enviar.
 

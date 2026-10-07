@@ -59,6 +59,14 @@ p{margin:0}
 .pill svg{width:16px;height:20px}
 .pill.chama svg{transform-origin:50% 100%}
 .pill.chama.pulsa svg{animation:chama 1.1s ease-out 2}
+/* chama da sequência por nível (chama()): maior e mais brilhante com os dias seguidos */
+.ch1{filter:drop-shadow(0 0 3px rgba(255,140,26,.8))}
+.ch2{filter:drop-shadow(0 0 5px rgba(255,140,26,.8));overflow:visible}
+.ch3{filter:drop-shadow(0 0 7px rgba(111,141,255,.85));overflow:visible}
+.pill.chama .ch1{width:20px;height:25px}.pill.chama .ch2{width:22px;height:27.5px}.pill.chama .ch3{width:24px;height:30px}
+.pill.chama.n1{box-shadow:inset 0 0 0 1.5px rgba(255,140,26,.55)}
+.pill.chama.n2{box-shadow:inset 0 0 0 1.5px rgba(255,140,26,.55),0 0 14px rgba(255,140,26,.35)}
+.pill.chama.n3{box-shadow:inset 0 0 0 1.5px #6f8dff,0 0 14px rgba(111,141,255,.45)}
 @keyframes chama{0%{transform:scale(1)}35%{transform:scale(1.7) rotate(-6deg)}70%{transform:scale(.9)}100%{transform:scale(1)}}
 
 .aviso{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--s1);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:14px;color:var(--ink2)}
@@ -237,6 +245,7 @@ p{margin:0}
 button.pill{cursor:pointer}
 .seq-top{display:flex;align-items:center;gap:12px;margin:4px 0 6px}
 .seq-top svg{width:44px;height:55px}
+.seq-top .ch1{width:55px;height:69px}.seq-top .ch2{width:64px;height:80px}.seq-top .ch3{width:70px;height:88px}
 .seq-top b{font-family:var(--disp);font-size:64px;font-weight:400;line-height:.9}
 .seq-dias{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
 .seq-dias div{display:grid;justify-items:center;gap:3px;font-size:11px;color:var(--ink3)}
@@ -380,6 +389,9 @@ button.pill{cursor:pointer}
 .cortes .campo{position:relative;margin-top:3px}
 .cortes input{width:100%;height:40px;border-radius:12px;border:0;background:var(--s1);text-align:center;font-size:16px;font-variant-numeric:tabular-nums;padding:0 14px 0 4px}
 .cortes .campo i{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--ink3);pointer-events:none}
+.aj-som{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.aj-som span{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.aj-som svg{width:22px;height:22px;flex:none;color:var(--gema)}
 .chave{width:50px;height:30px;flex:none;border-radius:15px;background:var(--s2);position:relative;transition:background .2s}
 .chave::after{content:"";position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:var(--ink3);transition:transform .2s,background .2s}
 .chave[aria-checked=true]{background:var(--gema)}
@@ -858,6 +870,7 @@ function normalizar(d){
   if(Array.isArray(d.conqPend))n.conqPend=d.conqPend;
   if(d.tutorial&&typeof d.tutorial==="object")n.tutorial=d.tutorial;
   if(Array.isArray(d.ordem))n.ordem=d.ordem.filter((k,i,a)=>EX.some(e=>e.k===k)&&a.indexOf(k)===i);
+  if(typeof d.som==="boolean")n.som=d.som;
   if(Array.isArray(d.ativos))n.ativos=d.ativos.filter((k,i,a)=>EX.some(e=>e.k===k)&&a.indexOf(k)===i);
   return n;
 }
@@ -1114,7 +1127,19 @@ function ave(e,o){
     (o.enf?FERRUGEM:"")+(o.cur?CURATIVO:"")+'</svg>';
 }
 const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="23" fill="#3a3935"/><rect x="11" y="12" width="24" height="22" rx="6" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.6"/><path d="M16 20 a7 7 0 0 1 14 0z" fill="#FFC83D" stroke="#2B2B2B" stroke-width="1.4"/><path d="M23 20 l3 -4" stroke="#2B2B2B" stroke-width="1.6" stroke-linecap="round"/></svg>';
-const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z" fill="#FF8C1A"/><path d="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z" fill="#FFC83D"/></svg>';
+const CH_FORA="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z",CH_DENTRO="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z";
+const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="'+CH_FORA+'" fill="#FF8C1A"/><path d="'+CH_DENTRO+'" fill="#FFC83D"/></svg>';
+/* chama da sequência: cresce com os dias seguidos. Até 6 dias é a de sempre; 7, maior e com brilho;
+   30, miolo branco e faíscas; 100, azul, a mais quente. O tamanho e o brilho de cada nível ficam no CSS (.ch1 a .ch3) */
+const nivelChama=n=>n>=100?3:n>=30?2:n>=7?1:0;
+function chama(n){
+  const v=nivelChama(n);if(!v)return CHAMA;
+  const c=v===3?["#4f6dff","#9fc0ff","#fff"]:["#FF8C1A","#FFC83D","#FFF4CC"];
+  return '<svg class="ch'+v+'" viewBox="0 0 24 30" aria-hidden="true"><path d="'+CH_FORA+'" fill="'+c[0]+'"/><path d="'+CH_DENTRO+'" fill="'+c[1]+'"/>'+
+    (v>=2?'<path d="M12 19 c.7 2 2.8 2.6 2.8 4.5 a2.8 2.8 0 0 1 -5.6 0 c0 -1 .5 -1.7 1.1 -2.1 c.3 1 .8 1.1 1.1 1.1 c-.3 -1.5 0 -2.5 .6 -3.5z" fill="'+c[2]+'"/>'+
+      '<circle cx="2" cy="6" r="1.2" fill="'+c[1]+'"/><circle cx="22.5" cy="3" r="1" fill="'+c[1]+'"/>':"")+
+    (v===3?'<path d="M21 9 l.8 1.8 1.8 .8 -1.8 .8 -.8 1.8 -.8 -1.8 -1.8 -.8 1.8 -.8z" fill="#fff"/><path d="M1 13 l.6 1.4 1.4 .6 -1.4 .6 -.6 1.4 -.6 -1.4 -1.4 -.6 1.4 -.6z" fill="#fff"/>':"")+'</svg>';
+}
 
 /* ================= estado de tela ================= */
 const U={abertos:{},ajDet:{},card:null,mao:"esquerda",imp:null,avisoFechado:false,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
@@ -1571,7 +1596,7 @@ document.addEventListener("pointerup",soltarOrdem);document.addEventListener("po
 document.addEventListener("click",ev=>{if(ordEngole){ordEngole=false;ev.stopPropagation();ev.preventDefault()}},true);
 
 /* ================= telas ================= */
-const pillSeq=seq=>seq?'<button class="pill chama'+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+CHAMA+seq+'</button>':"";
+const pillSeq=seq=>seq?'<button class="pill chama'+(nivelChama(seq)?" n"+nivelChama(seq):"")+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+chama(seq)+seq+'</button>':"";
 const IC_FALHA='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const IC_FEITO='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ALCA='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -2314,6 +2339,8 @@ function telaAjustes(){
     h+='</ul>';
   });
   h+='<div class="linha-bt"><button class="btn sec" data-a="cortes-padrao">Voltar aos cortes sugeridos</button></div></section>';
+  h+='<section class="aj" id="aj-som"><h2>Som</h2><p>O frango canta quando sobe de fase.</p><div class="aj-som"><span>'+ICONES.som+'Cocoricó ao subir de fase</span>'+
+    '<button class="chave" data-a="som" role="switch" aria-checked="'+somLigado()+'" aria-label="Cocoricó ao subir de fase"></button></div></section>';
   h+='<section class="aj"><h2>Backup</h2><p>Os registros ficam neste aparelho. Exporte de vez em quando para não perder nada.</p><p style="margin-top:6px;color:var(--ink3)">'+(D.ultimoBackup?"Último backup: "+dm(D.ultimoBackup)+"/"+D.ultimoBackup.slice(0,4):"Nenhum backup ainda")+'</p><div class="linha-bt"><button class="btn sec" data-a="exportar">Exportar</button><button class="btn sec" data-a="importar">Importar</button></div></section>';
   h+='<section class="aj" id="aj-tutorial"><h2>Tutorial</h2><p>Esqueceu onde fica alguma coisa? O frango mostra tudo de novo, com dados de exemplo.</p><button class="btn sec tour-rever" data-a="tutorial">Ver tutorial de novo</button></section>';
   h+='<section class="aj" id="aj-apagar"><h2>Apagar dados</h2><p>Apaga treinos, pesagens, conquistas e ajustes deste celular e deixa o app como novo.</p><button class="btn perigo" data-a="apagar">Apagar todos os dados</button></section>';
@@ -2404,7 +2431,7 @@ function folha(){
     const fal={};let nFal=0,ultFal=null;datas().forEach(d=>{if(d<=somaDias(hoje(),-30))return;falhouEm(D.sessoes[d]).forEach(e=>{fal[e.nome]=(fal[e.nome]||0)+1;nFal++;ultFal=d})});
     const txtFal=nFal?nFal+(nFal===1?" falha":" falhas")+": "+Object.keys(fal).map(n=>n+" "+fal[n]).join(" · ")+". Última em "+dm(ultFal)+".":"Nenhuma. Tudo completo!";
     return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Sequência</h2>'+
-      '<div class="seq-top">'+CHAMA+'<b>'+n+'</b><span>'+(n===1?"dia seguido":"dias seguidos")+'<br>com treino</span></div>'+
+      '<div class="seq-top">'+chama(n)+'<b>'+n+'</b><span>'+(n===1?"dia seguido":"dias seguidos")+'<br>com treino</span></div>'+
       '<p class="sub">'+(hojeFeito?"Hoje já conta. Volte amanhã para manter o fogo aceso.":hojeDesc?"Hoje é dia de descanso. A sequência volta a contar no próximo treino.":"Hoje ainda não conta. Registre um treino ou uma escalada para a sequência continuar.")+'</p>'+
       '<ul class="info-lista">'+
       '<li><b>Melhor sequência</b>'+melhor+(melhor===1?" dia":" dias")+(melhor&&melhor===n?" (é a atual!)":"")+'</li>'+
@@ -2474,7 +2501,7 @@ function dadosCena(ev){
   else if(ev.tipo==="sessao"){tit="Resumo do dia";
     arte='<div class="ses-lista">'+ev.evs.map(x=>{const c=dadosCena(Object.assign({dia:dAlvo},x));
       return '<div class="ses-i"><div class="msc-g">'+c.arte+'</div><div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div></div>'}).join("")+'</div>'}
-  else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao" viewBox="0 0 24 30" aria-hidden="true">'+CHAMA.replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
+  else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao'+(nivelChama(ev.n)?" ch"+nivelChama(ev.n):"")+'" viewBox="0 0 24 30" aria-hidden="true">'+chama(ev.n).replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit=["Dedinho sensível","Dedo reclamando","Dedo em greve"][Math.min(3,ev.nivel)-1];txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
   else if(ev.tipo==="esforco"){const n=ev.nota<=4?0:ev.nota<=7?1:2;
@@ -2504,7 +2531,42 @@ function animarEvolucao(){
   setTimeout(()=>{
     svg.querySelectorAll(".st").forEach(x=>{x.classList.remove("on","pop");if(+x.dataset.f===para){x.classList.add("on");void x.getBBox();x.classList.add("pop")}});
     const b=svg.querySelector(".burst");b.classList.remove("go");void b.getBBox();b.classList.add("go");
+    if(somLigado()&&g.isConnected)cocorico();   /* o frango canta junto com a fase nova */
   },900);
+}
+
+/* ================= som =================
+   Cocoricó ao subir de fase, sintetizado na hora (Web Audio): sem arquivo, funciona sem internet.
+   D.som false desliga (Ajustes); sem escolha salva, fica ligado. */
+const somLigado=()=>D.som!==false;
+let AUDIO=null;
+function audio(){
+  if(!AUDIO){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;try{AUDIO=new AC()}catch(e){return null}}
+  if(AUDIO.state==="suspended")AUDIO.resume().catch(()=>{});
+  return AUDIO;
+}
+/* o celular só libera som depois de um toque: o toque que leva à comemoração já deixa o áudio pronto */
+function liberarSom(){
+  if(!somLigado()||(AUDIO&&AUDIO.state==="running"))return;
+  const ac=audio();if(!ac)return;
+  try{const s=ac.createBufferSource();s.buffer=ac.createBuffer(1,1,22050);s.connect(ac.destination);s.start(0)}catch(e){}
+}
+["pointerdown","touchend","keydown"].forEach(t=>document.addEventListener(t,liberarSom,{capture:true,passive:true}));
+/* co, co, ri, cóóó: cada sílaba sobe e desce o tom; a última é longa e tremida.
+   ac: outro contexto de áudio (para gravar o som num teste); sem ele, usa o do app */
+function cocorico(ac){
+  ac=ac||audio();if(!ac)return;
+  const t0=ac.currentTime+.04,saida=ac.createGain(),filtro=ac.createBiquadFilter();
+  saida.gain.value=.45;filtro.type="bandpass";filtro.frequency.value=1500;filtro.Q.value=.9;
+  filtro.connect(saida);saida.connect(ac.destination);
+  [[0,.12,520,640,560],[.16,.12,540,680,600],[.33,.15,640,860,780],[.53,.8,760,1040,640]].forEach(([ini,dur,f0,f1,f2])=>{
+    const t=t0+ini,o=ac.createOscillator(),g=ac.createGain();
+    o.type="sawtooth";
+    o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f1,t+dur*.3);o.frequency.linearRampToValueAtTime(f2,t+dur);
+    if(dur>.5){const vib=ac.createOscillator(),vg=ac.createGain();vib.frequency.value=26;vg.gain.value=f1*.025;vib.connect(vg);vg.connect(o.frequency);vib.start(t);vib.stop(t+dur+.02)}
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+.015);g.gain.setValueAtTime(1,t+dur-.06);g.gain.linearRampToValueAtTime(0,t+dur);
+    o.connect(g);g.connect(filtro);o.start(t);o.stop(t+dur+.02);
+  });
 }
 
 /* ================= render ================= */
@@ -2516,7 +2578,8 @@ const ICONES={
   evolucao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16.5l4-3.5 3 2.5 4.2-4.7"/><circle cx="17.5" cy="8.5" r="3"/><path d="M15.85 5.95c-.6-1.8 1.05-2.25 1.5-.9.36-1.35 1.8-1.2 1.65.45"/><path d="M20.5 8.2l1.8.6-1.8.6"/></svg>',
   ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5.5M13.5 7H21M3 17h11.5M19.5 17H21"/><circle cx="11" cy="7" r="2.4"/><path d="M9.68 4.96c-0.48 -1.44 0.84 -1.8 1.2 -0.72c0.29 -1.08 1.44 -0.96 1.32 0.36"/><path d="M13.4 6.76l1.44 0.48 -1.44 0.48"/><circle cx="17" cy="17" r="2.4"/><path d="M15.68 14.96c-0.48 -1.44 0.84 -1.8 1.2 -0.72c0.29 -1.08 1.44 -0.96 1.32 0.36"/><path d="M19.4 16.76l1.44 0.48 -1.44 0.48"/></svg>',
   cadeado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>'
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>',
+  som:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
 };
 /* escolha simples na folha (nota, tempo, intensidade): só troca o botão marcado, sem redesenhar
    a folha inteira (nem o desenho da mão, quando aberto) */
@@ -2661,6 +2724,7 @@ document.addEventListener("click",ev=>{
     case "apagar-ok":apagarTudo();break;
     case "tutorial":D.tutorial={};gravar();U.tela="treino";U.dia=hoje();U.card=null;U.modo=null;U.folha=null;render();break;
     case "ativo":alternarAtivo(v,b);break;
+    case "som":D.som=!somLigado();gravar();b.setAttribute("aria-checked",String(D.som));if(D.som)cocorico();toast(D.som?"Cocoricó ligado":"Som desligado");break;
     case "aj-det":alternarDet(v);break;
     case "cortes-padrao":D.cortes=JSON.parse(JSON.stringify(CORTES));verificarFases();gravar();toast("Cortes restaurados");render();break;
   }
@@ -2719,7 +2783,7 @@ const ROTEIROS={
     {folha:"sessao",u:{dorSim:false,dorP:{}},alvo:()=>[$("#f-t"),$(".folha .sub"),$(".folha .esforco")],t:"Intensidade",x:"Dê uma nota de 1 a 10 para o fortalecimento: 1 é leve, 10 é no limite. A soma das notas da semana vira o gráfico da Evolução."},
     {folha:"sessao",u:{dorSim:true,dorP:{},mao:"esquerda"},demo:"dor",alvo:()=>blocoFolha("Dor"),t:"Dor nos dedos",x:"Doeu? Toque em Tive dor, escolha a mão e toque onde doeu. Cada toque troca entre leve, moderada e aguda, e o quarto apaga."},
     {folha:"sessao",u:{dorSim:true,dorP:{"esquerda:Médio:PIP":2},mao:"esquerda"},demo:"escalada",alvo:()=>blocoFolha("Escalou"),t:"Escalada",x:"Escalou? Toque em Sim e marque o tempo e a intensidade: leve, moderada ou intensa. Dia só de escalada também conta na sequência."},
-    {alvo:"#app .eng",t:"Ajustes",x:"Os exercícios que você acompanha e os cortes das fases de cada um, backup dos seus dados e o botão para ver este tutorial de novo."},
+    {alvo:"#app .eng",t:"Ajustes",x:"Os exercícios que você acompanha e os cortes das fases de cada um, o cocoricó, backup dos seus dados e o botão para ver este tutorial de novo."},
     {so:true,ok:"Bora treinar!",t:"Pronto, frango!"}
   ],
   evolucao:[
