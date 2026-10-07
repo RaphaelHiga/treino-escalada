@@ -1268,7 +1268,7 @@ function estadoPeso(){
   const {p,dia}=pesoRef(),v=r1(num(pesoRascunho().v)||0),ig=!!p&&r1(p.kg)===v;
   if(!p)return {rot:"Salvar",cls:v>0?"pronto":"",sub:"Base para calcular a força relativa"};
   const atras=Math.max(0,diasEntre(p.data,hoje()));
-  const ult="Último registro: "+nf1.format(p.kg)+" kg em "+dm(p.data)+" | "+(atras===0?"hoje":atras===1?"ontem":"há "+atras+" dias");
+  const ult="Último registro: "+nf1.format(p.kg)+" kg | "+(atras===0?"hoje":atras===1?"ontem":"há "+atras+" dias");
   if(dia)return ig?{rot:"Salvo",cls:"ok",sub:podeDesfazerPeso()?"Toque em Salvo para desfazer":ult}:{rot:"Atualizar",cls:"pronto",sub:ult};
   return {rot:ig?"Manter":"Atualizar",cls:ig?"":"pronto",sub:ult,alerta:U.dia===hoje()&&atras>7};
 }
