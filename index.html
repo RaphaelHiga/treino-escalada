@@ -127,14 +127,13 @@ p{margin:0}
 .ex-top h2{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .ordem-faixa{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--s1);font-size:14px;color:var(--ink2)}
 .ordem-faixa b{display:block;color:var(--ink);font-weight:700;margin-bottom:1px}
-.ordem-faixa button{flex:none;height:36px;padding:0 14px;border-radius:999px;background:var(--gema);color:var(--gema-ink);font-weight:700;font-size:13px}
 .ex.ordem{padding:10px 0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;position:relative;background:var(--bg)}
 .ex.ordem .ex-top{margin:0}
-.ex.ordem .ex-top>div:nth-child(2){min-width:0;flex:1}
+.ex.ordem .ex-top>div:nth-child(3){min-width:0;flex:1}
 .ex.ordem h2{font-size:24px}
 .ex.ordem .proto{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .alca svg{width:22px;height:22px;display:block}
-.alca{flex:none;width:44px;height:44px;display:grid;place-items:center;color:var(--ink2)}
+.alca{flex:none;width:28px;height:44px;margin-right:-2px;display:grid;place-items:center;color:var(--ink2)}
 .ex.ordem.anda{transition:transform .2s cubic-bezier(.2,.8,.3,1)}
 .ex.ordem.arrasta{z-index:3;cursor:grabbing;background:var(--s2);border-radius:12px;border-top-color:transparent;box-shadow:0 10px 28px rgba(0,0,0,.6);margin:0 -10px;padding:10px}
 .ex.ordem.pega{animation:pega .45s cubic-bezier(.3,1.8,.5,1)}
@@ -1433,11 +1432,11 @@ const IC_FEITO='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle c
 const ALCA='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function telaOrdem(){
   const ex=exOrdem(),pad_=!Array.isArray(D.ordem)||ex.every((e,i)=>e.k===EX[i].k);
-  let h='<div class="ordem-faixa"><span><b>Ordem dos exercícios</b>Arraste o exercício para cima ou para baixo.</span><button data-a="ordem-ok">Pronto</button></div>';
+  let h='<div class="ordem-faixa"><span><b>Ordem dos exercícios</b>Arraste o exercício para cima ou para baixo.</span></div>';
   ex.forEach(e=>{
     const st=estadoAve(e);
-    h+='<section class="ex ordem'+(U.ordPega===e.k?" pega":"")+'" data-ex="'+e.k+'"><div class="ex-top"><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
-      '<div><h2>'+e.nome+'</h2><p class="proto">'+e.proto+'</p></div><span class="alca">'+ALCA+'</span></div></section>';
+    h+='<section class="ex ordem'+(U.ordPega===e.k?" pega":"")+'" data-ex="'+e.k+'"><div class="ex-top"><span class="alca">'+ALCA+'</span><div class="av">'+ave(e,{fase:st.fase,enf:st.enf,cur:st.cur,mini:true})+'</div>'+
+      '<div><h2>'+e.nome+'</h2><p class="proto">'+e.proto+'</p></div></div></section>';
   });
   h+='<div class="fechar"><button class="btn" data-a="ordem-ok">Pronto</button>'+(pad_?"":'<button class="btn sec" data-a="ordem-padrao">Voltar à ordem original</button>')+'</div>';
   U.ordPega=null;
