@@ -78,6 +78,18 @@ p{margin:0}
 .info-lista{list-style:none;margin:4px 0 0;padding:0}
 .info-lista li{padding:10px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink2)}
 .info-lista b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
+.forta-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.forta-top b{margin:0}
+.esf-selo{flex:none;padding:3px 10px;border-radius:999px;background:var(--s2);font-size:12px;color:var(--ink3)}
+.esf-selo span{font-weight:700;color:var(--gema)}
+.fx{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0}
+.fx-nm{color:var(--ink)}
+.fx-rs{display:grid;gap:3px;justify-items:end;text-align:right;font-variant-numeric:tabular-nums}
+.fx-r{display:flex;align-items:center;gap:7px}
+.fx-lado{min-width:22px;font-size:12px;color:var(--ink3);text-align:left}
+.fx-pt{flex:none;width:7px;height:7px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--ink3)}
+.fx-pt.ok{background:var(--gema);box-shadow:none}
+.fx-pt.falha{background:var(--d3);box-shadow:none}
 .proto{font-size:13px;color:var(--ink3)}
 .ex-top .rel{margin-left:auto;text-align:right;font-family:var(--disp);font-size:28px;line-height:1;color:var(--ink2)}
 .ex-top .rel small{display:block;font:500 11px "Archivo",sans-serif;color:var(--ink3);letter-spacing:.01em}
@@ -2085,18 +2097,27 @@ function folhaDia(d){
   let h='<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">'+esc(tit.charAt(0).toUpperCase()+tit.slice(1))+'</h2>'+
     '<p class="sub">'+(!s?(d<hoje()?"Sem registro: conta como dia de descanso.":"Nada registrado ainda."):s.descanso?"Registrado como dia de descanso.":treinou(s)?"Dia de treino.":"Registro sem treino.")+'</p>';
   if(ev.length)h+='<div class="dia-cenas">'+ev.map(x=>{const c=dadosCena(x);return '<div class="dia-cena"><div class="msc-g">'+c.arte+'</div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div>'}).join("")+'</div>';
-  const li=[];
+  const li=[];let forta="";
   if(s){
-    const ex=EX.filter(e=>slotsDe(e).some(sl=>((s.s||{})[sl]||[]).some(Boolean))).map(e=>e.nome+": "+slotsDe(e).map(sl=>{const a=(s.s[sl]||[]).filter(Boolean),ok=a.filter(x=>x.ok),lado=e.maos?(/E$/.test(sl)?"esq ":"dir "):"";
-      if(!a.length)return lado+"—";return lado+(ok.length===3?"feito, 3 × "+fmtCarga(e,ok[0].c):a.length===3&&!ok.length?"falha com "+fmtCarga(e,a[0].c):ok.length+" de 3")}).join(" · "));
-    if(ex.length)li.push(['Fortalecimento'+(temEsf(s)?' · intensidade '+s.esforco+' de 10':""),ex.join("\n")]);
+    /* fortalecimento: um exercício por linha, resultado à direita (mãos iguais viram uma linha só) */
+    const res=(e,sl)=>{const a=(s.s[sl]||[]).filter(Boolean),ok=a.filter(x=>x.ok);
+      if(!a.length)return {c:"",t:"—"};
+      if(ok.length===3)return {c:"ok",t:"3 × "+fmtCarga(e,ok[0].c)};
+      if(a.length===3&&!ok.length)return {c:"falha",t:"Falhou com "+fmtCarga(e,a[0].c)};
+      return {c:"",t:ok.length+" de 3 séries"}};
+    const linha=(r,lado)=>'<span class="fx-r">'+(lado?'<span class="fx-lado">'+lado+'</span>':"")+'<i class="fx-pt '+r.c+'"></i>'+esc(r.t)+'</span>';
+    const ex=EX.filter(e=>slotsDe(e).some(sl=>((s.s||{})[sl]||[]).some(Boolean))).map(e=>{
+      const rs=slotsDe(e).map(sl=>res(e,sl)),igual=rs.length===2&&rs[0].c===rs[1].c&&rs[0].t===rs[1].t;
+      return '<div class="fx"><span class="fx-nm">'+esc(e.nome)+'</span><span class="fx-rs">'+
+        (!e.maos?linha(rs[0]):igual?linha({c:rs[0].c,t:rs[0].t+(rs[0].t==="—"?"":" cada mão")}):linha(rs[0],"Esq")+linha(rs[1],"Dir"))+'</span></div>'});
+    if(ex.length)forta='<li class="forta"><div class="forta-top"><b>Fortalecimento</b>'+(temEsf(s)?'<span class="esf-selo">Intensidade <span>'+s.esforco+'</span>/10</span>':"")+'</div>'+ex.join("")+'</li>';
     if(s.dor&&Object.keys(s.dor).length)li.push(["Dor",dorTexto(s.dor)]);
     else if(s.esforco!=null||s.escalada!=null)li.push(["Dor","Sem dor"]);
     if(s.escalada)li.push(["Escalada",fmtMin(s.escalada.min)+(s.escalada.min>=180?" ou mais":"")+", "+(ESC_INT.find(x=>x[0]===s.escalada.int)||ESC_INT[0])[1].toLowerCase()]);
     else if(s.escalada===false)li.push(["Escalada","Não escalou"]);
   }
   if(pd)li.push(["Peso corporal",nf1.format(pd.kg)+" kg"]);
-  if(li.length)h+='<ul class="info-lista">'+li.map(x=>'<li><b>'+x[0]+'</b>'+esc(x[1]).replace(/\n/g,"<br>")+'</li>').join("")+'</ul>';
+  if(forta||li.length)h+='<ul class="info-lista">'+forta+li.map(x=>'<li><b>'+x[0]+'</b>'+esc(x[1]).replace(/\n/g,"<br>")+'</li>').join("")+'</ul>';
   h+='<div class="linha-bt"><button class="btn sec" data-a="fundo-fechar">Fechar</button><button class="btn" data-a="abrir" data-v="'+d+'">'+(s?"Editar este dia":"Registrar este dia")+'</button></div></div></div>';
   return h;
 }
