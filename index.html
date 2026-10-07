@@ -1208,8 +1208,8 @@ function animarBloco(k,fazer,ancora){
 }
 /* liga ou desliga um exercício nos Ajustes no mesmo ritmo do abrir e recolher do Treino:
    a chave desliza e o frango vira ovo (ou o contrário); os detalhes abertos continuam abertos */
-/* detalhes (cortes) de um exercício nos Ajustes: sem escolha nesta visita, abertos só nos ligados */
-function detAberto(e){return e.k in U.ajDet?U.ajDet[e.k]:ativo(e)}
+/* detalhes (cortes) de um exercício nos Ajustes: todos começam recolhidos */
+function detAberto(e){return !!U.ajDet[e.k]}
 function alternarDet(k){
   const e=EX.find(x=>x.k===k),li=document.querySelector('#app [data-ex="'+k+'"]'),abrir=!detAberto(e);
   U.ajDet[k]=abrir;
@@ -1222,7 +1222,6 @@ function alternarAtivo(k,bt){
   const at=exAtivos().map(e=>e.k),i=at.indexOf(k),e=EX.find(x=>x.k===k);
   if(i>=0&&at.length===1){toast("Deixe pelo menos um exercício");return}
   if(i>=0)at.splice(i,1);else at.push(k);
-  U.ajDet[k]=detAberto(e);   /* os detalhes ficam como estão: ligar e desligar não abre nem fecha */
   D.ativos=EX.map(x=>x.k).filter(x=>at.indexOf(x)>=0);gravar();
   bt.setAttribute("aria-checked",String(i<0));
   alternarAtivo.t=setTimeout(()=>{alternarAtivo.t=null;if(U.tela==="ajustes")animarBloco(k,render,"topo");else render()},RM?0:180);
@@ -2776,7 +2775,9 @@ function tourIniciar(t){
   TOUR.ativo=true;TOUR.tela=t;TOUR.passos=ROTEIROS[t];TOUR.i=0;TOUR.tk=0;TOUR.el=null;
   TOUR.real=D;TOUR.u={tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes,abertos:U.abertos,ajDet:U.ajDet,fila:U.fila};
   D=dadosExemplo();verificarFases();checarConquistas();
-  Object.assign(U,{tela:t,card:null,dia:hoje(),modo:null,mes:null,abertos:{},ajDet:{},fila:[],folha:null,pd:null,armado:null});
+  /* nos Ajustes, o primeiro exercício ligado vem aberto para o tutorial mostrar os cortes */
+  const pri=CATS.reduce((a,c)=>a.concat(EX.filter(e=>e.cat===c[0])),[]).find(ativo);
+  Object.assign(U,{tela:t,card:null,dia:hoje(),modo:null,mes:null,abertos:{},ajDet:pri?{[pri.k]:true}:{},fila:[],folha:null,pd:null,armado:null});
   try{history.pushState({tour:1},"")}catch(x){}
   document.body.insertAdjacentHTML("beforeend",'<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-bloq"></div>'+
     '<div class="tour-luz nada" style="top:50%;left:50%;width:0;height:0"></div><div class="tour-dedo" aria-hidden="true"></div><div class="tour-balao some"></div></div>');
