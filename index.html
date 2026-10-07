@@ -362,6 +362,10 @@ button.pill{cursor:pointer}
 .aj-ex .av{width:40px;height:40px}
 .aj-ex li.surge .cortes{animation:surge .32s ease-out both}
 .aj-ex li.some .cortes{opacity:0;transition:opacity .18s ease-out}
+.aj-ex-abre{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;-webkit-tap-highlight-color:transparent}
+.aj-ex-abre::after{content:"";flex:none;width:8px;height:8px;margin:0 2px 0 auto;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:translateY(-2px) rotate(45deg);transition:transform .2s}
+.aj-ex-abre[aria-expanded=true]::after{transform:translateY(2px) rotate(-135deg)}
+.aj-ex-abre .av{display:block}
 .aj-ex-tx{flex:1;min-width:0}
 .aj-ex-tx b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
 .aj-ex-tx small{display:block;font-size:12px;color:var(--ink3)}
@@ -1104,7 +1108,7 @@ const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="2
 const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z" fill="#FF8C1A"/><path d="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z" fill="#FFC83D"/></svg>';
 
 /* ================= estado de tela ================= */
-const U={abertos:{},card:null,mao:"esquerda",imp:null,avisoFechado:false,armado:null,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
+const U={abertos:{},ajDet:{},card:null,mao:"esquerda",imp:null,avisoFechado:false,armado:null,abre:false,tela:"treino",dia:hoje(),folha:null,fila:[],pop:null,chama:false,esf:null,dorSim:false,dorP:{},peso:null,erro:""};
 
 /* ================= eventos (celebrações) ================= */
 const celebrados=new Set();
@@ -1203,15 +1207,24 @@ function animarBloco(k,fazer,ancora){
   requestAnimationFrame(passo);
 }
 /* liga ou desliga um exercício nos Ajustes no mesmo ritmo do abrir e recolher do Treino:
-   a chave desliza, os cortes somem (ao desligar) e a altura da linha vai deslizando até a nova */
+   a chave desliza e o frango vira ovo (ou o contrário); os detalhes abertos continuam abertos */
+/* detalhes (cortes) de um exercício nos Ajustes: sem escolha nesta visita, abertos só nos ligados */
+function detAberto(e){return e.k in U.ajDet?U.ajDet[e.k]:ativo(e)}
+function alternarDet(k){
+  const e=EX.find(x=>x.k===k),li=document.querySelector('#app [data-ex="'+k+'"]'),abrir=!detAberto(e);
+  U.ajDet[k]=abrir;
+  if(abrir||RM||!li){animarBloco(k,render,"topo");return}
+  li.classList.add("some");clearTimeout(alternarDet.t);
+  alternarDet.t=setTimeout(()=>{if(U.tela==="ajustes")animarBloco(k,render,"topo");else render()},180);
+}
 function alternarAtivo(k,bt){
   if(alternarAtivo.t)return;
   const at=exAtivos().map(e=>e.k),i=at.indexOf(k),e=EX.find(x=>x.k===k);
   if(i>=0&&at.length===1){toast("Deixe pelo menos um exercício");return}
   if(i>=0)at.splice(i,1);else at.push(k);
+  U.ajDet[k]=detAberto(e);   /* os detalhes ficam como estão: ligar e desligar não abre nem fecha */
   D.ativos=EX.map(x=>x.k).filter(x=>at.indexOf(x)>=0);gravar();
   bt.setAttribute("aria-checked",String(i<0));
-  const li=bt.closest("li");if(li&&i>=0&&!RM)li.classList.add("some");
   alternarAtivo.t=setTimeout(()=>{alternarAtivo.t=null;if(U.tela==="ajustes")animarBloco(k,render,"topo");else render()},RM?0:180);
   toast((i>=0?"Desligado: ":"Acompanhando: ")+e.nome);
 }
@@ -2255,14 +2268,14 @@ function telaAjustes(){
   const p=pesoAtual();
   let h='<header class="topo fixo'+(window.scrollY>4?" rolou":"")+'"><div><button class="voltar" data-a="tela" data-v="treino">‹ Treino</button><h1>Ajustes</h1></div></header>';
   h+='<section class="aj" id="aj-ex"><h2>Exercícios</h2><p>Escolha os que você acompanha: só eles aparecem no Treino e na Evolução. Desligar não apaga nada; ao religar, o histórico volta.</p>'+
-    '<p style="margin-top:6px">Embaixo de cada exercício ligado ficam os cortes das fases: quando o frango muda de fase, em % do peso corporal.</p>';
+    '<p style="margin-top:6px">Toque num exercício, ligado ou não, para ver ou esconder os cortes das fases: quando o frango muda de fase, em % do peso corporal.</p>';
   CATS.forEach(c=>{
     h+='<h3 class="aj-cat">'+c[1]+'</h3><ul class="aj-ex">';
-    EX.filter(e=>e.cat===c[0]).forEach(e=>{const on=ativo(e),st=estadoAve(e);
-      h+='<li data-ex="'+e.k+'"'+(on?"":' class="off"')+'><div class="aj-ex-lin"><div class="av">'+(on?ave(e,{fase:st.fase,enf:st.enf,mini:true}):ovoEspera(e.cor,r1(.4+EX.indexOf(e)*.53%3.4)))+'</div><div class="aj-ex-tx"><b>'+e.nome+'</b><small>'+e.proto+'</small></div>'+
+    EX.filter(e=>e.cat===c[0]).forEach(e=>{const on=ativo(e),st=estadoAve(e),det=detAberto(e);
+      h+='<li data-ex="'+e.k+'"'+(on?"":' class="off"')+'><div class="aj-ex-lin"><button class="aj-ex-abre" data-a="aj-det" data-v="'+e.k+'" aria-expanded="'+det+'" aria-controls="cortes-'+e.k+'"><span class="av">'+(on?ave(e,{fase:st.fase,enf:st.enf,mini:true}):ovoEspera(e.cor,r1(.4+EX.indexOf(e)*.53%3.4)))+'</span><span class="aj-ex-tx"><b>'+e.nome+'</b><small>'+e.proto+'</small></span></button>'+
         '<button class="info-bt" data-a="info" data-v="'+e.k+'" aria-label="Como fazer: '+e.nome+'">'+ICONES.info+'</button>'+
         '<button class="chave" data-a="ativo" data-v="'+e.k+'" role="switch" aria-checked="'+on+'" aria-label="Acompanhar '+e.nome+'"></button></div>'+
-        (on?'<div class="cortes"><small>Cortes em % do peso, '+(e.lev?"só a carga":"peso + carga")+'</small><div class="cortes-g">'+[0,1,2].map(i=>'<div><label for="corte-'+e.k+i+'">'+FASES[i+1]+'</label><div class="campo">'+
+        (det?'<div class="cortes" id="cortes-'+e.k+'"><small>Cortes em % do peso, '+(e.lev?"só a carga":"peso + carga")+'</small><div class="cortes-g">'+[0,1,2].map(i=>'<div><label for="corte-'+e.k+i+'">'+FASES[i+1]+'</label><div class="campo">'+
           '<input id="corte-'+e.k+i+'" data-a="corte" data-k="'+e.k+'" data-i="'+i+'" inputmode="decimal" value="'+D.cortes[e.k][i]+'" aria-label="'+e.nome+', corte para '+FASES[i+1]+', em % do peso"><i>%</i></div></div>').join("")+'</div></div>':"")+'</li>'});
     h+='</ul>';
   });
@@ -2605,6 +2618,7 @@ document.addEventListener("click",ev=>{
     case "apagar-ok":apagarTudo();break;
     case "tutorial":D.tutorial={};gravar();U.tela="treino";U.dia=hoje();U.card=null;U.modo=null;U.folha=null;render();break;
     case "ativo":alternarAtivo(v,b);break;
+    case "aj-det":alternarDet(v);break;
     case "cortes-padrao":D.cortes=JSON.parse(JSON.stringify(CORTES));verificarFases();gravar();toast("Cortes restaurados");render();break;
   }
 });
@@ -2685,7 +2699,7 @@ const ROTEIROS={
   ],
   ajustes:[
     {alvo:"#aj-ex",t:"Seus exercícios",x:"Superior, inferior, core e específico. Ligue os que você treina e desligue os que não quer acompanhar. O ⓘ explica cada um."},
-    {alvo:"#app .cortes",t:"A régua das fases",x:"Embaixo de cada exercício ligado ficam os cortes: quando o frango muda de fase, em % do peso. Achou fácil ou difícil demais? Ajuste aqui."},
+    {alvo:"#app .cortes",t:"A régua das fases",x:"Toque num exercício para ver os cortes: quando o frango muda de fase, em % do peso. Achou fácil ou difícil demais? Ajuste aqui."},
     {alvo:()=>{const b=$("#app [data-a=exportar]");return b&&b.parentElement},t:"Frango prevenido vale por dois",x:"Seus treinos ficam só neste celular. Exporte de vez em quando e guarde no Drive, no e-mail ou onde preferir. Trocou de celular? É só importar."},
     {alvo:"#aj-tutorial",t:"Quer rever?",x:"Este botão mostra o tutorial de novo quando você quiser."}
   ]
@@ -2760,9 +2774,9 @@ function tourTalvez(){
 }
 function tourIniciar(t){
   TOUR.ativo=true;TOUR.tela=t;TOUR.passos=ROTEIROS[t];TOUR.i=0;TOUR.tk=0;TOUR.el=null;
-  TOUR.real=D;TOUR.u={tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes,abertos:U.abertos,fila:U.fila};
+  TOUR.real=D;TOUR.u={tela:U.tela,card:U.card,dia:U.dia,modo:U.modo,mes:U.mes,abertos:U.abertos,ajDet:U.ajDet,fila:U.fila};
   D=dadosExemplo();verificarFases();checarConquistas();
-  Object.assign(U,{tela:t,card:null,dia:hoje(),modo:null,mes:null,abertos:{},fila:[],folha:null,pd:null,armado:null});
+  Object.assign(U,{tela:t,card:null,dia:hoje(),modo:null,mes:null,abertos:{},ajDet:{},fila:[],folha:null,pd:null,armado:null});
   try{history.pushState({tour:1},"")}catch(x){}
   document.body.insertAdjacentHTML("beforeend",'<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-bloq"></div>'+
     '<div class="tour-luz nada" style="top:50%;left:50%;width:0;height:0"></div><div class="tour-dedo" aria-hidden="true"></div><div class="tour-balao some"></div></div>');
