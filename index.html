@@ -1005,7 +1005,11 @@ function dorRecente(){return memo("dor",()=>{
 })}
 /* dia de treino: fortalecimento ou escalada */
 const treinou=s=>temSeries(s)||!!(s&&s.escalada);
-const MARCOS_SEQ=[3,7,14,21,30,50,75,100,150,200,365];
+/* marcas da sequência, em dias de treino. Com 3 a 4 treinos por semana: 5 ≈ 1 semana e meia,
+   15 ≈ 1 mês, 50 ≈ 3 meses, 150 ≈ 1 ano */
+const MARCOS_SEQ=[3,5,7,10,15,20,30,40,50,75,100,150];
+/* medalha Sequência de fogo: as chaves guardam os nomes antigos (seq7 vale com 5) para não perder as já ganhas */
+const META_SEQ=[["seq7",5],["seq15",15],["seq30",30]];
 /* sequência: cada dia de treino soma 1. Descanso faz parte do treino: até FOLGA_SEQ dias seguidos
    sem treino deixam a sequência parada, sem somar nem quebrar; o dia seguinte de descanso quebra.
    Hoje sem registro ainda não conta como descanso (o dia não acabou). */
@@ -1134,9 +1138,9 @@ function ave(e,o){
 const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="23" fill="#3a3935"/><rect x="11" y="12" width="24" height="22" rx="6" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.6"/><path d="M16 20 a7 7 0 0 1 14 0z" fill="#FFC83D" stroke="#2B2B2B" stroke-width="1.4"/><path d="M23 20 l3 -4" stroke="#2B2B2B" stroke-width="1.6" stroke-linecap="round"/></svg>';
 const CH_FORA="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z",CH_DENTRO="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z";
 const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="'+CH_FORA+'" fill="#FF8C1A"/><path d="'+CH_DENTRO+'" fill="#FFC83D"/></svg>';
-/* chama da sequência: cresce com os dias de treino. Até 6 dias é a de sempre; 7, maior e com brilho;
-   30, miolo branco e faíscas; 100, azul, a mais quente. O tamanho e o brilho de cada nível ficam no CSS (.ch1 a .ch3) */
-const nivelChama=n=>n>=100?3:n>=30?2:n>=7?1:0;
+/* chama da sequência: cresce com os dias de treino. Até 4 é a de sempre; 5, maior e com brilho;
+   15, miolo branco e faíscas; 50, azul, a mais quente. O tamanho e o brilho de cada nível ficam no CSS (.ch1 a .ch3) */
+const nivelChama=n=>n>=50?3:n>=15?2:n>=5?1:0;
 function chama(n){
   const v=nivelChama(n);if(!v)return CHAMA;
   const c=v===3?["#4f6dff","#9fc0ff","#fff"]:["#FF8C1A","#FFC83D","#FFF4CC"];
@@ -1901,7 +1905,7 @@ function telaAgenda(){
 const CONQ=[
   {k:"primeiro",n:"Primeiro passo",r:"1º",d:"Registrou o primeiro treino."},
   {k:"seq",n:"Sequência de fogo",niveis:[
-    {k:"seq7",r:"7 dias",d:"7 dias de treino na mesma sequência."},
+    {k:"seq7",r:"5 dias",d:"5 dias de treino na mesma sequência."},
     {k:"seq15",r:"15 dias",d:"15 dias de treino na mesma sequência."},
     {k:"seq30",r:"30 dias",d:"30 dias de treino na mesma sequência."}]},
   {k:"mes12",n:"Mês completo",r:"12/mês",d:"12 dias com treino no mesmo mês."},
@@ -1983,7 +1987,7 @@ function contarConquistas(){
   dias.forEach((x,i)=>{
     const s=ss[x.d];
     if(x.t){
-      run++;if(run>best)best=run;[7,15,30].forEach(n=>{if(run>=n)ok("seq"+n,x.d)});
+      run++;if(run>best)best=run;META_SEQ.forEach(m=>{if(run>=m[1])ok(m[0],x.d)});
       if(ant&&diasEntre(ant,x.d)-1>=14)ok("ressuscitou",x.d);
       rr=0;fg=0;ant=x.d;nt++;ok("primeiro",x.d);[50,100,200].forEach(n=>{if(nt>=n)ok("vet"+n,x.d)});
       const m=x.d.slice(0,7);noMes[m]=(noMes[m]||0)+1;mesMax=Math.max(mesMax,noMes[m]);if(noMes[m]>=12)ok("mes12",x.d);
@@ -2015,7 +2019,7 @@ function contarConquistas(){
   const vis=(D.vistos||[]).filter(k=>INFO[k]).length;if(vis>=5)ok("curioso",D.conq&&D.conq.curioso||h);
   const fases=EX.map(e=>progressoFase(e).fmax||0),nMaq=fases.filter(f=>f===3).length,ja=k=>D.conq&&D.conq[k]||h;
   if(nMaq)ok("maquina",ja("maquina"));if(nMaq>=3)ok("maquina3",ja("maquina3"));if(nMaq>=5)ok("maquinas",ja("maquinas"));
-  pr("seq7",best,7);pr("seq15",best,15);pr("seq30",best,30);pr("mes12",mesMax,12);
+  META_SEQ.forEach(m=>pr(m[0],best,m[1]));pr("mes12",mesMax,12);
   [50,100,200].forEach(n=>pr("vet"+n,nt,n));pr("fds",fds,4);pr("fds12",fds,12);pr("fds26",fds,26);
   pr("completo",nFeitos(),Math.max(nAt,1));pr("perfeito",perf,Math.max(nAt,1));pr("perfeito10",nPerf,10);
   pr("recorde10",rec,10);pr("recorde25",rec,25);pr("maquina",Math.max.apply(null,fases),3);pr("maquina3",nMaq,3);pr("maquinas",nMaq,5);
