@@ -59,7 +59,7 @@ p{margin:0}
 .pill svg{width:16px;height:20px}
 .pill.chama svg{transform-origin:50% 100%}
 .pill.chama.pulsa svg{animation:chama 1.1s ease-out 2}
-/* chama da sequência por nível (chama()): maior e mais brilhante com os dias seguidos */
+/* chama da sequência por nível (chama()): maior e mais brilhante com os dias de treino */
 .ch1{filter:drop-shadow(0 0 3px rgba(255,140,26,.8))}
 .ch2{filter:drop-shadow(0 0 5px rgba(255,140,26,.8));overflow:visible}
 .ch3{filter:drop-shadow(0 0 7px rgba(111,141,255,.85));overflow:visible}
@@ -1005,20 +1005,29 @@ function dorRecente(){return memo("dor",()=>{
 })}
 /* dia de treino: fortalecimento ou escalada */
 const treinou=s=>temSeries(s)||!!(s&&s.escalada);
-const MARCOS_SEQ=[3,7,14,21,30,50,75,100,150,200,365];
-/* dias seguidos com treino. Hoje sem registro ainda não quebra (o dia não acabou);
-   hoje registrado como descanso quebra na hora. */
-function sequencia(){
-  let d=hoje();if(!treinou(D.sessoes[d])){if(D.sessoes[d]&&D.sessoes[d].descanso)return 0;d=somaDias(d,-1)}
-  let n=0;while(treinou(D.sessoes[d])){n++;d=somaDias(d,-1)}
-  return n;
+/* marcas da sequência, em dias de treino. Com 3 a 4 treinos por semana: 5 ≈ 1 semana e meia,
+   15 ≈ 1 mês, 50 ≈ 3 meses, 150 ≈ 1 ano */
+const MARCOS_SEQ=[3,5,7,10,15,20,30,40,50,75,100,150];
+/* medalha Sequência de fogo: as chaves guardam os nomes antigos (seq7 vale com 5) para não perder as já ganhas */
+const META_SEQ=[["seq7",5],["seq15",15],["seq30",30]];
+/* sequência: cada dia de treino soma 1. Descanso faz parte do treino: até FOLGA_SEQ dias seguidos
+   sem treino deixam a sequência parada, sem somar nem quebrar; o dia seguinte de descanso quebra.
+   Hoje sem registro ainda não conta como descanso (o dia não acabou). */
+const FOLGA_SEQ=2;
+/* n: dias de treino da sequência atual; f: dias de descanso seguidos desde o último treino */
+function estadoSeq(){
+  let d=hoje(),n=0,f=0,fim=null;
+  if(!treinou(D.sessoes[d])&&!(D.sessoes[d]&&D.sessoes[d].descanso))d=somaDias(d,-1);
+  for(;f<=FOLGA_SEQ;d=somaDias(d,-1)){if(treinou(D.sessoes[d])){if(fim===null)fim=f;n++;f=0}else f++}
+  return {n:n,f:n?fim:f};
 }
+function sequencia(){return estadoSeq().n}
 /* descanso: a partir do primeiro registro, dia que já passou sem treino (com ou sem registro)
    ou hoje registrado como descanso. p: o primeiro registro, para quem pergunta dia a dia já passar pronto */
 const descansou=(d,p=datas()[0])=>!!p&&d>=p&&!treinou(D.sessoes[d])&&(d<hoje()||!!(D.sessoes[d]&&D.sessoes[d].descanso));
 function melhorSequencia(){
   let m=0,n=0,ant=null;
-  datas().forEach(d=>{if(!treinou(D.sessoes[d]))return;n=ant&&somaDias(ant,1)===d?n+1:1;ant=d;if(n>m)m=n});
+  datas().forEach(d=>{if(!treinou(D.sessoes[d]))return;n=ant&&diasEntre(ant,d)<=FOLGA_SEQ+1?n+1:1;ant=d;if(n>m)m=n});
   return m;
 }
 function eventosSequencia(antes){
@@ -1129,9 +1138,9 @@ function ave(e,o){
 const BALANCA='<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="23" fill="#3a3935"/><rect x="11" y="12" width="24" height="22" rx="6" fill="#F7F4EC" stroke="#2B2B2B" stroke-width="1.6"/><path d="M16 20 a7 7 0 0 1 14 0z" fill="#FFC83D" stroke="#2B2B2B" stroke-width="1.4"/><path d="M23 20 l3 -4" stroke="#2B2B2B" stroke-width="1.6" stroke-linecap="round"/></svg>';
 const CH_FORA="M12 1 C13 8 20 11 20 19 a8 8 0 0 1 -16 0 c0 -4 2 -6 3.5 -8 c.5 3 2 4 3 4 c-1 -5 0 -10 1.5 -14z",CH_DENTRO="M12 13 c1 4 5 5 5 9 a5 5 0 0 1 -10 0 c0 -2 1 -3 2 -4 c.5 2 1.5 2 2 2 c-.5 -3 0 -5 1 -7z";
 const CHAMA='<svg viewBox="0 0 24 30" aria-hidden="true"><path d="'+CH_FORA+'" fill="#FF8C1A"/><path d="'+CH_DENTRO+'" fill="#FFC83D"/></svg>';
-/* chama da sequência: cresce com os dias seguidos. Até 6 dias é a de sempre; 7, maior e com brilho;
-   30, miolo branco e faíscas; 100, azul, a mais quente. O tamanho e o brilho de cada nível ficam no CSS (.ch1 a .ch3) */
-const nivelChama=n=>n>=100?3:n>=30?2:n>=7?1:0;
+/* chama da sequência: cresce com os dias de treino. Até 4 é a de sempre; 5, maior e com brilho;
+   15, miolo branco e faíscas; 50, azul, a mais quente. O tamanho e o brilho de cada nível ficam no CSS (.ch1 a .ch3) */
+const nivelChama=n=>n>=50?3:n>=15?2:n>=5?1:0;
 function chama(n){
   const v=nivelChama(n);if(!v)return CHAMA;
   const c=v===3?["#4f6dff","#9fc0ff","#fff"]:["#FF8C1A","#FFC83D","#FFF4CC"];
@@ -1596,7 +1605,7 @@ document.addEventListener("pointerup",soltarOrdem);document.addEventListener("po
 document.addEventListener("click",ev=>{if(ordEngole){ordEngole=false;ev.stopPropagation();ev.preventDefault()}},true);
 
 /* ================= telas ================= */
-const pillSeq=seq=>seq?'<button class="pill chama'+(nivelChama(seq)?" n"+nivelChama(seq):"")+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+' dias seguidos com treino. Ver detalhes">'+chama(seq)+seq+'</button>':"";
+const pillSeq=seq=>seq?'<button class="pill chama'+(nivelChama(seq)?" n"+nivelChama(seq):"")+(U.chama?" pulsa":"")+'" data-a="seqinfo" aria-label="'+seq+(seq===1?' dia':' dias')+' de treino na sequência. Ver detalhes">'+chama(seq)+seq+'</button>':"";
 const IC_FALHA='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--d3)"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
 const IC_FEITO='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--gema-ink)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--gema)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ALCA='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -1896,9 +1905,9 @@ function telaAgenda(){
 const CONQ=[
   {k:"primeiro",n:"Primeiro passo",r:"1º",d:"Registrou o primeiro treino."},
   {k:"seq",n:"Sequência de fogo",niveis:[
-    {k:"seq7",r:"7 dias",d:"7 dias seguidos com treino."},
-    {k:"seq15",r:"15 dias",d:"15 dias seguidos com treino."},
-    {k:"seq30",r:"30 dias",d:"30 dias seguidos com treino."}]},
+    {k:"seq7",r:"5 dias",d:"5 dias de treino na mesma sequência."},
+    {k:"seq15",r:"15 dias",d:"15 dias de treino na mesma sequência."},
+    {k:"seq30",r:"30 dias",d:"30 dias de treino na mesma sequência."}]},
   {k:"mes12",n:"Mês completo",r:"12/mês",d:"12 dias com treino no mesmo mês."},
   {k:"vet",n:"Veterano",niveis:[
     {k:"vet50",r:"50",d:"50 dias com treino no total."},
@@ -1972,20 +1981,20 @@ function contarConquistas(){
   const ds=datas(),ss=D.sessoes,h=hoje();
   /* linha do tempo dia a dia desde o primeiro registro: T treino, R descanso */
   const dias=[];if(ds.length)for(let d=ds[0];d<=h;d=somaDias(d,1))dias.push({d:d,t:treinou(ss[d]),r:descansou(d,ds[0])});
-  let run=0,best=0,rr=0,ant=null,nt=0,noMes={},mesMax=0,fds=0,semDor=0,soEsc=0,min=0,rec=0,melhor={},falhou={},feitoEx={},perf=0,nPerf=0,n3h=0;
+  let run=0,best=0,fg=0,rr=0,ant=null,nt=0,noMes={},mesMax=0,fds=0,semDor=0,soEsc=0,min=0,rec=0,melhor={},falhou={},feitoEx={},perf=0,nPerf=0,n3h=0;
   /* dia perfeito e completo contam só os exercícios acompanhados */
   const at=exAtivos(),nAt=at.length,nFeitos=()=>at.filter(e=>feitoEx[e.k]).length;
   dias.forEach((x,i)=>{
     const s=ss[x.d];
     if(x.t){
-      run++;if(run>best)best=run;[7,15,30].forEach(n=>{if(run>=n)ok("seq"+n,x.d)});
+      run++;if(run>best)best=run;META_SEQ.forEach(m=>{if(run>=m[1])ok(m[0],x.d)});
       if(ant&&diasEntre(ant,x.d)-1>=14)ok("ressuscitou",x.d);
-      rr=0;ant=x.d;nt++;ok("primeiro",x.d);[50,100,200].forEach(n=>{if(nt>=n)ok("vet"+n,x.d)});
+      rr=0;fg=0;ant=x.d;nt++;ok("primeiro",x.d);[50,100,200].forEach(n=>{if(nt>=n)ok("vet"+n,x.d)});
       const m=x.d.slice(0,7);noMes[m]=(noMes[m]||0)+1;mesMax=Math.max(mesMax,noMes[m]);if(noMes[m]>=12)ok("mes12",x.d);
       if(dt(x.d).getDay()===0&&i>0&&dias[i-1].t){fds++;if(fds>=4)ok("fds",x.d);if(fds>=12)ok("fds12",x.d);if(fds>=26)ok("fds26",x.d)}
       if(s.escalada!==undefined&&!s.dor){semDor++;if(semDor>=20)ok("semdor",x.d);if(semDor>=50)ok("semdor50",x.d);if(semDor>=100)ok("semdor100",x.d)}
       if(s.escalada&&!temSeries(s)){soEsc++;if(soEsc>=5)ok("soesc",x.d)}
-    }else{run=0;if(x.r){rr++;if(rr>=7)ok("sofa",x.d);if(rr>=30)ok("hiberna",x.d)}}
+    }else{if(++fg>FOLGA_SEQ)run=0;if(x.r){rr++;if(rr>=7)ok("sofa",x.d);if(rr>=30)ok("hiberna",x.d)}}
     if(s&&s.escalada){min+=s.escalada.min;[10,50,100].forEach(n=>{if(min>=n*60)ok("h"+n,x.d)});
       if(s.escalada.min>=120)ok("longa",x.d);if(s.escalada.min>=180){ok("ginasio",x.d);n3h++;if(n3h>=10)ok("ginasio10",x.d)}
       if(s.escalada.int==="intensa")ok("intensa",x.d);if(s.escalada.int==="leve"&&s.escalada.min<=30)ok("passeio",x.d)}
@@ -2010,7 +2019,7 @@ function contarConquistas(){
   const vis=(D.vistos||[]).filter(k=>INFO[k]).length;if(vis>=5)ok("curioso",D.conq&&D.conq.curioso||h);
   const fases=EX.map(e=>progressoFase(e).fmax||0),nMaq=fases.filter(f=>f===3).length,ja=k=>D.conq&&D.conq[k]||h;
   if(nMaq)ok("maquina",ja("maquina"));if(nMaq>=3)ok("maquina3",ja("maquina3"));if(nMaq>=5)ok("maquinas",ja("maquinas"));
-  pr("seq7",best,7);pr("seq15",best,15);pr("seq30",best,30);pr("mes12",mesMax,12);
+  META_SEQ.forEach(m=>pr(m[0],best,m[1]));pr("mes12",mesMax,12);
   [50,100,200].forEach(n=>pr("vet"+n,nt,n));pr("fds",fds,4);pr("fds12",fds,12);pr("fds26",fds,26);
   pr("completo",nFeitos(),Math.max(nAt,1));pr("perfeito",perf,Math.max(nAt,1));pr("perfeito10",nPerf,10);
   pr("recorde10",rec,10);pr("recorde25",rec,25);pr("maquina",Math.max.apply(null,fases),3);pr("maquina3",nMaq,3);pr("maquinas",nMaq,5);
@@ -2072,7 +2081,7 @@ const mTrofeu=(x,y,s,num)=>'<g transform="translate('+x+' '+y+') scale('+s+')"><
   (num?'<text x="0" y="-2" text-anchor="middle" font-size="9" font-weight="800" fill="#6b4300" font-family="Archivo,sans-serif">'+num+'</text>':"")+'</g>';
 const mTexto=(x,y,t,tam,cor,cls)=>'<text'+(cls?' class="'+cls+'"':"")+' x="'+x+'" y="'+y+'" text-anchor="middle" font-size="'+tam+'" font-weight="800" fill="'+(cor||"#2B2B2B")+'" font-family="Archivo,sans-serif">'+t+'</text>';
 
-/* dias seguidos: a chama cresce a cada nível; no ouro, óculos escuros */
+/* sequência: a chama cresce a cada nível; no ouro, óculos escuros */
 function mFogo(t){
   const l=[1.4,1.9,2.4][t],x=[40,44,48][t];
   return (t?mChama(0,60,[0,3.2,4.4][t],0):"")+mChama(-x,60,l,.35)+mChama(x,60,l,.6)+'<g class="m-pula">'+mFrango(t===2?M_OCULOS:C_FELIZ,M_CIMA)+'</g>';
@@ -2421,24 +2430,31 @@ function folha(){
       (U.erro?'<p class="erro" role="alert">'+esc(U.erro)+'</p>':"")+'<button class="btn" data-a="retro-ok">Registrar este dia</button></div></div>';
   }
   if(U.folha==="seq"){
-    const n=sequencia(),hojeFeito=treinou(D.sessoes[hoje()]),melhor=melhorSequencia(),prox=MARCOS_SEQ.find(m=>m>n);
+    const es=estadoSeq(),n=es.n,f=es.f,hojeFeito=treinou(D.sessoes[hoje()]),melhor=melhorSequencia(),prox=MARCOS_SEQ.find(m=>m>n);
     const falhouEm=s=>s?EX.filter(e=>slotsDe(e).some(sl=>{const a=(s.s||{})[sl]||[];return a.length===3&&a.every(x=>x&&!x.ok)})):[];
     /* mesmo bloco do Histórico: número no canto e o selo do frango na cor do dia */
     let dias="";for(let k=13;k>=0;k--){const d=somaDias(hoje(),-k);
       dias+='<div><span class="ag-dia '+classeDia(d)+'">'+SELO+'<b>'+Number(d.slice(8))+'</b></span>'+"DSTQQSS"[dt(d).getDay()]+'</div>'}
     let mes=0,desc=0;for(let k=0;k<30;k++){const d=somaDias(hoje(),-k);if(treinou(D.sessoes[d]))mes++;else if(descansou(d))desc++}
-    const hojeDesc=!hojeFeito&&D.sessoes[hoje()]&&D.sessoes[hoje()].descanso;
+    const hojeDesc=!hojeFeito&&D.sessoes[hoje()]&&D.sessoes[hoje()].descanso,resta=FOLGA_SEQ-f,nd=k=>k+(k===1?" dia":" dias");
+    /* o que dizer de hoje: descanso não quebra até a folga acabar */
+    const txtHoje=hojeFeito?"Hoje já conta. Descansar também é treino: até "+FOLGA_SEQ+" dias de descanso seguidos não quebram a sequência.":
+      !n?(hojeDesc?"Hoje é dia de descanso. A sequência começa no próximo treino.":"Hoje ainda não conta. Registre um treino ou uma escalada para começar a sequência."):
+      hojeDesc?(resta?"Hoje é descanso: a sequência fica parada, sem quebrar. Dá para descansar mais "+nd(resta)+".":"Hoje é o "+f+"º dia de descanso seguido. A sequência fica parada, mas o próximo dia sem treino quebra."):
+      !f?"Hoje ainda não conta. Treine ou descanse: até "+FOLGA_SEQ+" dias de descanso seguidos não quebram a sequência.":
+      resta?(f===1?"Ontem foi descanso.":"Já são "+nd(f)+" de descanso.")+" Hoje dá para treinar ou descansar mais um dia sem quebrar.":
+      "Já são "+nd(f)+" de descanso. Treine hoje para manter a sequência.";
     const fal={};let nFal=0,ultFal=null;datas().forEach(d=>{if(d<=somaDias(hoje(),-30))return;falhouEm(D.sessoes[d]).forEach(e=>{fal[e.nome]=(fal[e.nome]||0)+1;nFal++;ultFal=d})});
     const txtFal=nFal?nFal+(nFal===1?" falha":" falhas")+": "+Object.keys(fal).map(n=>n+" "+fal[n]).join(" · ")+". Última em "+dm(ultFal)+".":"Nenhuma. Tudo completo!";
     return '<div class="fundo'+(U.abre?" abre":"")+'" data-a="fundo"><div class="folha" role="dialog" aria-modal="true" aria-labelledby="f-t"><h2 id="f-t">Sequência</h2>'+
-      '<div class="seq-top">'+chama(n)+'<b>'+n+'</b><span>'+(n===1?"dia seguido":"dias seguidos")+'<br>com treino</span></div>'+
-      '<p class="sub">'+(hojeFeito?"Hoje já conta. Volte amanhã para manter o fogo aceso.":hojeDesc?"Hoje é dia de descanso. A sequência volta a contar no próximo treino.":"Hoje ainda não conta. Registre um treino ou uma escalada para a sequência continuar.")+'</p>'+
+      '<div class="seq-top">'+chama(n)+'<b>'+n+'</b><span>'+(n===1?"dia de treino":"dias de treino")+'<br>na sequência</span></div>'+
+      '<p class="sub">'+txtHoje+'</p>'+
       '<ul class="info-lista">'+
-      '<li><b>Melhor sequência</b>'+melhor+(melhor===1?" dia":" dias")+(melhor&&melhor===n?" (é a atual!)":"")+'</li>'+
-      (prox?'<li><b>Próxima comemoração</b>'+prox+' dias. Faltam '+(prox-n)+(prox-n===1?" dia":" dias")+'.</li>':"")+
+      '<li><b>Melhor sequência</b>'+nd(melhor)+' de treino'+(melhor&&melhor===n?" (é a atual!)":"")+'</li>'+
+      (prox?'<li><b>Próxima comemoração</b>'+prox+' dias de treino. '+(prox-n===1?"Falta 1 treino":"Faltam "+(prox-n)+" treinos")+'.</li>':"")+
       '<li><b>Últimos 30 dias</b>'+mes+(mes===1?" dia":" dias")+' com treino · '+desc+(desc===1?" de descanso":" de descanso")+'</li>'+
       '<li><b>Falhas nos últimos 30 dias</b>'+esc(txtFal)+'</li>'+
-      '<li><b>O que conta</b>Qualquer dia com fortalecimento (feito ou falha) ou escalada. Dia sem registro, ou registrado só com dor ou como descanso, é descanso e interrompe a sequência.</li></ul>'+
+      '<li><b>O que conta</b>Cada dia com fortalecimento (feito ou falha) ou escalada soma 1. Dia sem registro, só com dor ou de descanso não soma nem quebra: a sequência fica parada. Ela só quebra no '+(FOLGA_SEQ+1)+'º dia de descanso seguido.</li></ul>'+
       '<h3 class="sec-t" style="font-size:22px;margin:18px 0 2px">Últimos 14 dias</h3><div class="seq-dias">'+dias+'</div>'+
       '<div class="legenda ag-leg"><span class="f">'+SELO+'fortalecimento</span><span class="e">'+SELO+'só escalada</span><span class="d">'+SELO+'descanso</span><span><i class="ovo-falha"></i>falha</span></div>'+
       '<button class="btn" data-a="fundo-fechar">Fechar</button></div></div>';
@@ -2501,7 +2517,7 @@ function dadosCena(ev){
   else if(ev.tipo==="sessao"){tit="Resumo do dia";
     arte='<div class="ses-lista">'+ev.evs.map(x=>{const c=dadosCena(Object.assign({dia:dAlvo},x));
       return '<div class="ses-i"><div class="msc-g">'+c.arte+'</div><div><b>'+c.tit+'</b><span>'+esc(c.txt)+'</span></div></div>'}).join("")+'</div>'}
-  else if(ev.tipo==="sequencia"){tit="Dias seguidos";txt="Você treinou "+ev.n+" dias em sequência.";arte='<svg class="chamao'+(nivelChama(ev.n)?" ch"+nivelChama(ev.n):"")+'" viewBox="0 0 24 30" aria-hidden="true">'+chama(ev.n).replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
+  else if(ev.tipo==="sequencia"){tit="Sequência";txt="Você somou "+ev.n+" dias de treino sem quebrar a sequência.";arte='<svg class="chamao'+(nivelChama(ev.n)?" ch"+nivelChama(ev.n):"")+'" viewBox="0 0 24 30" aria-hidden="true">'+chama(ev.n).replace(/^<svg[^>]*>|<\/svg>$/g,"")+'</svg><p class="contagem">'+ev.n+'</p>'}
   else if(ev.tipo==="dor"){tit=["Dedinho sensível","Dedo reclamando","Dedo em greve"][Math.min(3,ev.nivel)-1];txt=ev.nivel>=3?"Dor aguda: descanse os dedos e só volte a pôr carga quando passar.":ev.nivel===2?"Dor moderada: alivie a carga nos próximos treinos e observe.":"Dor leve: fique de olho. Se piorar, alivie a carga.";
     arte=cena(CENA_DOR[Math.min(3,ev.nivel)-1],["#3d4a5c","#5a3a3a","#5c2a33"][Math.min(3,ev.nivel)-1])}
   else if(ev.tipo==="esforco"){const n=ev.nota<=4?0:ev.nota<=7?1:2;
@@ -2799,8 +2815,8 @@ const ROTEIROS={
   agenda:[
     {t:"Seu diário de bordo",varios:[
       {alvo:"#app .mes-nav",r:"Meses",x:"O histórico fica aqui, mês a mês. Use as setas para trocar de mês."},
-      {alvo:"#app .hist-tit .pill.chama",r:"Sequência",x:"Dias seguidos com treino, e escalada também conta. Toque na chama para ver os detalhes."}]},
-    {folha:"seq",alvo:()=>[$(".folha .seq-top"),$(".folha .sub")].concat([...document.querySelectorAll(".folha .info-lista li")].slice(0,3)),t:"Detalhes da sequência",x:"Melhor sequência, próxima comemoração, últimos 30 dias e falhas. Embaixo, um calendário das últimas duas semanas.\n\nDia sem registro ou só de descanso apaga o fogo."},
+      {alvo:"#app .hist-tit .pill.chama",r:"Sequência",x:"Dias de treino na sequência, e escalada também conta. Até 2 dias de descanso seguidos não quebram. Toque na chama para ver os detalhes."}]},
+    {folha:"seq",alvo:()=>[$(".folha .seq-top"),$(".folha .sub")].concat([...document.querySelectorAll(".folha .info-lista li")].slice(0,3)),t:"Detalhes da sequência",x:"Melhor sequência, próxima comemoração, últimos 30 dias e falhas. Embaixo, um calendário das últimas duas semanas.\n\nDescanso faz parte: não soma nem quebra. O fogo só apaga com 3 dias de descanso seguidos."},
     {alvo:"#app .ag-grade",t:"Uma cabecinha por dia",x:"Cabeça amarela é dia de fortalecimento, cinza é só escalada e só o contorno é descanso. A bolinha vermelha marca falha.\n\nToque num dia para ver tudo o que foi registrado."},
     {alvo:"#app .conq-grade",fase:2,t:"Conquistas",x:"Medalhas por constância, recordes, horas de parede... e umas surpresas escondidas. Toque numa medalha para ver quanto falta."}
   ],
