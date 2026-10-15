@@ -23,6 +23,7 @@ App de treino de escalada em português (pt-BR), feito como PWA de um arquivo s�
 
 - Abrir, recolher, ligar e desligar blocos usa `animarBloco(k, render, ancora)`: a altura desliza, sem pulo. Respeite `RM` (reduzir movimento).
 - Excluir é um toque só, com Desfazer no aviso: `toast(texto, desfazer)` (ver `excluirComDesfazer`).
+- Comemorações do treino (recorde, força, fase nova, sequência e conquistas) só aparecem ao registrar o treino (`salvarSessao`), depois do Resumo do dia. Os toques em Feito só anotam em `D.evPend` (e `D.conqPend`); `eventosSegurados()` refaz tudo com o estado final, então Feito seguido de Falha não comemora. As duas mãos de um exercício viram um aviso só (`textoLados`).
 - Sequência (`estadoSeq()`, `sequencia()`): cada dia de treino soma 1. Até `FOLGA_SEQ` (2) dias de descanso seguidos deixam a sequência parada, sem somar nem quebrar; o 3º quebra. Descanso faz parte do treino: o app não deve empurrar o usuário a treinar todo dia. `melhorSequencia()` e as conquistas `seq7` a `seq30` seguem a mesma regra. Comemorações em `MARCOS_SEQ`; metas da medalha em `META_SEQ` (as chaves têm nomes antigos: `seq7` vale com 5).
 - Chama da sequência: use `chama(n)` (nunca `CHAMA` direto). Ela cresce em 5, 15 e 50 dias de treino (`nivelChama`); tamanho e brilho ficam no CSS `.ch1` a `.ch3`.
 - Som: `cocorico()` é sintetizado com Web Audio (sem arquivo) e toca em `animarEvolucao`. `D.som === false` desliga; sem escolha salva, fica ligado.

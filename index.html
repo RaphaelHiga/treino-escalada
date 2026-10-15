@@ -868,6 +868,7 @@ function normalizar(d){
   if(d.conq&&typeof d.conq==="object")n.conq=d.conq;
   if(Array.isArray(d.vistos))n.vistos=d.vistos;
   if(Array.isArray(d.conqPend))n.conqPend=d.conqPend;
+  if(Array.isArray(d.evPend))n.evPend=d.evPend.filter(x=>x&&typeof x==="object");
   if(d.tutorial&&typeof d.tutorial==="object")n.tutorial=d.tutorial;
   if(Array.isArray(d.ordem))n.ordem=d.ordem.filter((k,i,a)=>EX.some(e=>e.k===k)&&a.indexOf(k)===i);
   if(typeof d.som==="boolean")n.som=d.som;
@@ -1176,9 +1177,9 @@ function eventosSerie(slot){
   const chave=U.dia+":"+slot+":"+n;if(celebrados.has(chave))return [];celebrados.add(chave);
   const lado=ladoDe(slot)?" ("+ladoDe(slot)+")":"";
   const antes=melhorNota(slot,U.dia);
-  if(antes!==null&&n>antes)return [{tipo:"recorde",k:e.k,texto:e.nome+lado+": "+fmtCarga(e,n)+" nas 3 séries. O recorde anterior era "+fmtCarga(e,antes)+"."}];
+  if(antes!==null&&n>antes)return [{tipo:"recorde",k:e.k,n:n,antes:antes,texto:e.nome+lado+": "+fmtCarga(e,n)+" nas 3 séries. O recorde anterior era "+fmtCarga(e,antes)+"."}];
   const r=rel(e,n,U.dia),pr=melhorRelSlot(slot,null,U.dia);
-  if(r!==null&&pr!==null&&r>pr+.05)return [{tipo:"forca",k:e.k,ganho:r-pr,texto:e.nome+lado+": "+pct(r)+" do seu peso. Antes era "+pct(pr)+"."}];
+  if(r!==null&&pr!==null&&r>pr+.05)return [{tipo:"forca",k:e.k,r:r,pr:pr,ganho:r-pr,texto:e.nome+lado+": "+pct(r)+" do seu peso. Antes era "+pct(pr)+"."}];
   return [];
 }
 
@@ -1202,12 +1203,51 @@ function marcarTodas(slot){
   {const ex=exDe(slot);if(!falhou&&registrado(ss,ex)){
     U.abertos[ex.k]=true;recolherDepois(ex.k);
   }}
-  let ev=virouOk?eventosSerie(slot):[];
-  ev=ev.concat(verificarFases(true),eventosSequencia(antesTinha));
+  /* recorde, força, fase e sequência ficam para quando o treino for registrado (ver segurarEventos) */
+  if(virouOk)segurarEventos([{serie:slot,dia:U.dia}]);
+  segurarEventos(verificarFases(true).map(x=>({evo:x.k,de:x.de})));
+  if(U.dia===hoje()&&!antesTinha&&treinou(D.sessoes[U.dia]))segurarEventos([{seq:U.dia}]);
   gravar();
   if(navigator.vibrate)try{navigator.vibrate(virouOk?12:cheio?[8,40,8]:6)}catch(x){}
-  U.fila=U.fila.concat(ev);
   U.segurarConq=true;render();
+}
+/* o que as séries fizeram fica em D.evPend até o treino ser registrado: série marcada como feita
+   ({serie,dia}), frango que subiu de fase ({evo,de}) e primeiro treino do dia ({seq}). Assim a
+   comemoração não cobre o botão antes do toque da falha, e as duas mãos comemoram juntas.
+   Ao registrar, tudo é refeito com o estado final (eventosSegurados) */
+function segurarEventos(evs){
+  evs.forEach(x=>{const p=D.evPend=D.evPend||[];
+    if(!p.some(y=>y.serie===x.serie&&y.evo===x.evo&&y.seq===x.seq&&y.dia===x.dia))p.push(x)});
+}
+function eventosSegurados(antes){
+  const p=D.evPend||[],slots=[];
+  p.forEach(x=>{if(x.serie&&x.dia===U.dia&&slots.indexOf(x.serie)<0)slots.push(x.serie)});
+  /* fase: do menor ponto de partida até a fase de agora (se caiu de volta, não comemora) */
+  const de={};p.forEach(x=>{if(x.evo&&!(de[x.evo]<=x.de))de[x.evo]=x.de});
+  const evo=Object.keys(de).filter(k=>D.fases[k]>de[k]).map(k=>({tipo:"evoluiu",k:k,de:de[k],para:D.fases[k]}));
+  const ev=eventosSeries(slots).concat(evo,eventosSequencia(antes&&!p.some(x=>x.seq===U.dia)));
+  /* registrando um dia passado, o que já foi marcado hoje continua esperando o registro de hoje */
+  const fica=p.filter(x=>x.dia===hoje()&&U.dia!==hoje());
+  if(fica.length)D.evPend=fica;else delete D.evPend;
+  return ev;
+}
+/* recordes e ganhos de força das séries marcadas: um evento por exercício, com as duas mãos juntas */
+function eventosSeries(slots){
+  const por={},ordem=[];
+  slots.forEach(sl=>eventosSerie(sl).forEach(ev=>{if(!por[ev.k]){por[ev.k]=[];ordem.push(ev.k)}por[ev.k].push({sl:sl,ev:ev})}));
+  return ordem.map(k=>{
+    const v=por[k].sort((a,b)=>a.sl<b.sl?1:-1).map(x=>x.ev);   /* esquerda (E) antes da direita (D) */
+    if(v.length===1)return v[0];
+    return {tipo:v.some(x=>x.tipo==="recorde")?"recorde":"forca",k:k,ganho:Math.max.apply(null,v.map(x=>x.ganho||0)),texto:textoLados(exDe(k),v)};
+  });
+}
+/* os dois lados num texto só: "40 kg nas duas mãos" ou "40 kg na mão esquerda e 39 kg na direita" */
+function textoLados(e,v){
+  const m=membroDe(e),rec=v.every(x=>x.tipo==="recorde");
+  const val=x=>x.tipo==="recorde"?fmtCarga(e,x.n):pct(x.r)+" do seu peso",ant=x=>x.tipo==="recorde"?fmtCarga(e,x.antes):pct(x.pr);
+  const [a,b]=v.map(val),[c,d]=v.map(ant);
+  return e.nome+": "+(a===b?a+" nas duas "+m+"s":a+" na "+m+" esquerda e "+b+" na direita")+". "+
+    (c===d?(rec?"O recorde anterior era ":"Antes era ")+c:(rec?"Os recordes anteriores eram ":"Antes eram ")+c+" e "+d)+".";
 }
 /* mostra o resultado um instante e recolhe sozinho. A borda de baixo do bloco fica parada,
    então o próximo exercício não sai de debaixo do dedo: quem desliza é o que está acima */
@@ -1345,10 +1385,11 @@ function salvarSessao(){
   /* as cenas da sessão vão juntas numa tela só, o "Resumo do dia" */
   if(descanso)U.fila.push({tipo:"descanso"});
   else U.fila.push({tipo:"sessao",evs:forta?[{tipo:"esforco",nota:s.esforco},dorEv,escal]:(s.escalada?[{tipo:"semforta"}]:[]).concat([escal,dorEv])});
-  U.fila=U.fila.concat(eventosSequencia(antes));
+  /* depois do resumo, o que veio das séries: recordes, fases e sequência */
+  U.fila=U.fila.concat(eventosSegurados(antes));
   /* só agora, depois de fortalecimento, dor e escalada, as conquistas (as que ainda valem) */
   const pend=(D.conqPend||[]).filter(conqNoTopo);
-  if(D.conqPend){delete D.conqPend;gravar()}
+  delete D.conqPend;gravar();
   filaConquistas(pend);
   toast(descanso?"Descanso registrado":"Sessão salva");render();
 }
